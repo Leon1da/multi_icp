@@ -12,6 +12,7 @@ namespace kdt
 	/** @brief k-d tree class.
 	*/
 	template <class PointT>
+	
 	class KDTree
 	{
 	public:
@@ -298,6 +299,139 @@ namespace kdt
 		Node* root_;                 //!< root node
 		std::vector<PointT> points_; //!< points
 	};
+
+	class CorrespondenceFinder{
+		public:
+
+			CorrespondenceFinder(){};
+
+			~CorrespondenceFinder(){};
+
+			void init(Vector2fVector &points, IntPairVector &pose_point_correspondences){
+
+				cout << "building kdtree.." << endl;
+				_pose_point_correspondences = &pose_point_correspondences;
+				_points = &points;
+				_kdtree_points.clear();
+				_kdtree.clear();
+
+				for (size_t point_index = 0; point_index < points.size(); point_index++)
+				{   
+					Point2D kdtree_point(points[point_index]);
+					_kdtree_points.push_back(kdtree_point);
+				}
+
+				_kdtree.build(_kdtree_points);
+				
+				cout << "building kdtree complete." << endl;
+
+
+ 						
+			}
+
+			// for each point in the _kdtree compute the nearest point belonging to another map pose reading
+			void compute_other_pose_correspondences(int k = 10){
+				_other_pose_correspondences.clear();
+
+                cout << "computing other pose correspondences.." << endl;
+
+				for (size_t kdtree_point_index = 0; kdtree_point_index < _kdtree_points.size(); kdtree_point_index++)
+				{
+					int query_pose_index = (*_pose_point_correspondences)[kdtree_point_index].first;
+					int query_point_index = (*_pose_point_correspondences)[kdtree_point_index].second;
+					// cout << "query [pose = " << pose_query_point.first << " point = " << pose_query_point.second << "]" << endl;
+						
+					// IntVector matching_points_indices = _kdtree.knnSearch(_kdtree_points[kdtree_point_index], k);
+					IntVector matching_points_indices = _kdtree.radiusSearch(_kdtree_points[kdtree_point_index], 0.1);
+					
+					
+					// oredered by distance from query point
+					for(auto matching_point_id : matching_points_indices){
+					
+						int found_point_index = (*_pose_point_correspondences)[matching_point_id].second;
+						int found_pose_index = (*_pose_point_correspondences)[matching_point_id].first;
+						float distance = ((*_points)[query_point_index] - (*_points)[found_point_index]).norm();
+						// cout << "found [pose = " << found_pose_index << " point = " << found_point_index << " distance = " << distance << " ]" << endl;
+						if (distance == 0) continue; // It's me
+						if (found_pose_index == query_pose_index) continue; // same pose 
+						else{ // different pose 
+							IntPair correspondence;
+							correspondence.first = query_point_index;
+							correspondence.second = found_point_index;		
+							_other_pose_correspondences.push_back(correspondence);
+							break;
+						}
+					}
+				
+				}
+				
+				cout << "computing other pose correspondences ok." << endl; 
+			
+			}
+
+			// for each point in the _kdtree compute the nearest point(s) belonging to the same pose reading
+			void compute_same_pose_correspondences(int k = 10){
+				
+				_same_pose_correspondences.resize((*_points).size());
+				
+                cout << "computing same pose correspondences.." << endl;
+
+				for (size_t kdtree_point_index = 0; kdtree_point_index < _kdtree_points.size(); kdtree_point_index++)
+				{
+					_same_pose_correspondences[kdtree_point_index].clear();
+
+					int query_pose_index = (*_pose_point_correspondences)[kdtree_point_index].first;
+					int query_point_index = (*_pose_point_correspondences)[kdtree_point_index].second;
+					// cout << "query [pose = " << pose_query_point.first << " point = " << pose_query_point.second << "]" << endl;
+						
+					// IntVector matching_points_indices = _kdtree.knnSearch(_kdtree_points[kdtree_point_index], k);
+					IntVector matching_points_indices = _kdtree.radiusSearch(_kdtree_points[kdtree_point_index], 0.15);
+					
+					for(auto matching_point_id : matching_points_indices){
+						
+						int found_point_index = (*_pose_point_correspondences)[matching_point_id].second;
+						int found_pose_index = (*_pose_point_correspondences)[matching_point_id].first;
+						float distance = ((*_points)[query_point_index] - (*_points)[found_point_index]).norm();
+						// cout << "found [pose = " << found_pose_index << " point = " << found_point_index << " distance = " << distance << " ]" << endl;
+						if (distance == 0) continue; // It's me
+						if (found_pose_index != query_pose_index) continue; // different pose 
+						else _same_pose_correspondences[kdtree_point_index].push_back(matching_point_id);  // same pose (it will be used to estimate normals)
+						
+					}
+
+					// if (!_same_pose_correspondences[kdtree_point_index].size()){
+					// 	cout << "_same_pose_correspondence vector of point " << kdtree_point_index << " is empty."  << endl;
+					// 	cout << "You should increase the number of neighbours (k) .. otherwise errors may occurs." << endl;
+					// }
+					
+					
+							
+				}
+				
+				cout << "computing same pose correspondences ok." << endl; 
+			}
+
+			const IntPairVector& other_pose_correspondences(){
+				return _other_pose_correspondences;
+			}
+			
+			const vector<IntVector>& same_pose_correspondences(){
+				return _same_pose_correspondences;
+			}
+			
+		private:
+		
+			vector<Point2D> _kdtree_points;
+			kdt::KDTree<Point2D> _kdtree;
+			IntPairVector _other_pose_correspondences; // usefule for optimization
+			vector<IntVector> _same_pose_correspondences; // useful for computing point normal
+    
+			IntPairVector* _pose_point_correspondences;
+			Vector2fVector* _points;
+			
+
+	};
+
 } // kdt
 
 #endif // !__KDTREE_H__

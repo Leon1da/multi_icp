@@ -38,15 +38,16 @@ class Dataset{
     private:
         string _filename;
         vector<DatasetRecord> _records;
-
+        size_t _num_records;
+        
     public:
         Dataset(string filename);
         ~Dataset();
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
+        size_t num_records();        
+        void load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVector &pose_point_correspondences, size_t from_records = 0, size_t to_records = 0);
 
+    
 };
 
-
-Pose2D record_to_pose(DatasetRecord record);
-vector<Point2D> record_to_points(DatasetRecord record);

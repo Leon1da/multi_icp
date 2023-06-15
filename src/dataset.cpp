@@ -90,6 +90,7 @@ class Dataset
     private:
         string _filename;
         vector<DatasetRecord> _records;
+        size_t _num_records;
 
 
 
@@ -98,6 +99,8 @@ class Dataset
         ~Dataset();
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
+        size_t num_records();
+        void load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVector &pose_point_correspondences, size_t from_records, size_t to_records);
 
 
 };
@@ -105,6 +108,7 @@ class Dataset
 Dataset::Dataset(string filename)
 {
     _filename = filename;
+    _num_records = 0;
 
     cout << "Reading dataset.." << endl;
     cout << "Dataset file path: " << filename << endl;
@@ -116,13 +120,14 @@ Dataset::Dataset(string filename)
     
         DatasetRecord record = decode_line(line);
         _records.push_back(record);
+        _num_records = _num_records + 1;
         
     }
 
     // Close the file
     file.close();
 
-    cout << "Reading dataset complete." << endl;
+    cout << "Reading dataset complete." << endl << endl;
 
 }
 
@@ -130,9 +135,12 @@ Dataset::~Dataset()
 {
 }
 
-
 vector<DatasetRecord> Dataset::records(){
     return _records;
+}
+
+size_t Dataset::num_records(){
+    return _num_records;
 }
 
 DatasetRecord Dataset::decode_line(string line){
@@ -174,40 +182,75 @@ DatasetRecord Dataset::decode_line(string line){
     return record;
 }
 
+void Dataset::load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVector &pose_point_correspondences, size_t from_records=0, size_t num_records_to_load=0){
 
-
-Pose2D record_to_pose(DatasetRecord record){
-    float x, y, theta;
-    x = record.pose()[0];
-    y = record.pose()[1];
-    theta = record.pose()[2];
-    Pose2D pose(x, y, theta);
-    return pose;
-}
-
-vector<Point2D> record_to_points(DatasetRecord record){
-    Pose2D pose = record_to_pose(record);
-    vector<Point2D> points;
     
-    float angle_total_range = abs(record.angle_min()) + abs(record.angle_max());
-    float beams_angle_delta = angle_total_range / record.n_beams();
+    size_t num_poses = num_records();
 
-    float point_x, point_y, pose_x, pose_y, pose_theta;
-    pose_x = pose.x();
-    pose_y = pose.y();
-    pose_theta = pose.theta();
-
-    float value;
-
-    for(int i=0; i<record.n_beams(); i++){
-      value = record.values()[i];
-      if (value <= record.range_min() || value >= record.range_max()) continue; // out of range (sensor reading is too far or too close)
-      point_x = pose_x + value * cos(pose_theta + record.angle_min() + beams_angle_delta * i ); 
-      point_y = pose_y + value * sin(pose_theta + record.angle_min() + beams_angle_delta * i ); 
-      Point2D point(point_x, point_y);
-      points.push_back(point);
+    if (from_records < 0 || num_records_to_load < 0) {
+        cout << "from_records < 0 || num_records_to_load < 0" << endl;
+        return;
     }
 
-    return points;
+    if (from_records >= num_poses || num_records_to_load >= num_poses){
+        cout << "from_records > num_poses || num_records_to_load > num_poses" << endl;
+        return;
+    }
 
+    if (from_records + num_records_to_load > num_poses){
+        cout << "from_records + num_records_to_load > num_poses" << endl;
+        return;
+    }
+
+    if (num_records_to_load == 0) {
+        num_records_to_load = num_poses - from_records;
+    }
+
+    cout << "from_records: " << from_records << " num_records_to_load: " << num_records_to_load << endl;
+    cout << "num_records: " << num_poses << endl;
+   
+    poses.resize(num_records_to_load);
+    
+    Eigen::Vector3f pose;
+    Eigen::Vector2f point;
+    Vector2fVector valid_points;
+    IntPairVector pose_valid_point_correspondences;
+
+    int total_beams = 0;
+    float angle_total_range, beams_angle_delta, point_x, point_y, value;
+    for (size_t pose_index = 0; pose_index < num_records_to_load; pose_index++)
+    {
+        DatasetRecord record = records()[from_records + pose_index];
+        pose << record.pose()[0], record.pose()[1], record.pose()[2];
+        poses[pose_index] = pose;
+
+        angle_total_range = abs(record.angle_min()) + abs(record.angle_max());
+        beams_angle_delta = angle_total_range / record.n_beams();
+
+        for(int beam_index=0; beam_index<record.n_beams(); beam_index++){
+            value = record.values()[beam_index];
+            if (value <= record.range_min() || value >= record.range_max()) continue; // out of range (sensor reading is too far or too close)
+            point_x = pose.x() + value * cos(pose.z() + record.angle_min() + beams_angle_delta * beam_index ); 
+            point_y = pose.y() + value * sin(pose.z() + record.angle_min() + beams_angle_delta * beam_index ); 
+            point << point_x, point_y;
+            valid_points.push_back(point);
+            pose_valid_point_correspondences.push_back(IntPair(pose_index, total_beams));
+            total_beams++;
+        }
+
+        
+    }
+    
+    size_t num_points = valid_points.size();
+    points.resize(num_points);
+    pose_point_correspondences.resize(num_points);
+    for (size_t point_index = 0; point_index < num_points; point_index++)
+    {
+        points[point_index] = valid_points[point_index];
+        pose_point_correspondences[point_index] = pose_valid_point_correspondences[point_index];
+    }
+    
+    
+       
 }
+

@@ -1,5 +1,4 @@
 #include "defs.h"
-// #include "map.h"
 
 class DrawerController{
     private:
@@ -45,16 +44,24 @@ class Drawer{
 
         void clear();
         void show();
-        void drawPoint(Point2D point, DrawerController controller);
-        void drawPose(Pose2D pose, DrawerController controller);
 
-        void drawMapPoints(vector<Point2D> map_points,  DrawerController controller);
-        void drawMapPoses(vector<Pose2D> map_poses,  DrawerController controller);
-        void drawMap(Map map,  DrawerController controller);
-        void drawMapCorrespondences(vector<Point2D> points, vector<vector<int>> correspondences, DrawerController controller);
+        void drawLine(Eigen::Vector2f start_point, Eigen::Vector2f end_point, DrawerController controller, Scalar color);
+        void drawLines(Vector2fVector start_points, Vector2fVector end_points , DrawerController controller, Scalar color);
+        
+        void drawPoint(Eigen::Vector2f point, DrawerController controller, Scalar color);
+        void drawPoints(Vector2fVector points, DrawerController controller, Scalar color);
+        
+        void drawPose(Eigen::Vector3f pose, DrawerController controller, Scalar color);
+        void drawPoses(Vector3fVector poses, DrawerController controller, Scalar color);
 
-        bool isOutsideImage(Point2D point);
+        void drawCorrespondences(Vector2fVector points, IntPairVector correspondences, DrawerController controller, Scalar color);
+        
+        void drawNormal(Eigen::Vector2f point, float angle, DrawerController controller, Scalar color);
+        void drawNormals(Vector2fVector &points, FloatVector &angles, DrawerController controller, Scalar color);
+        
+        bool isOutsideImage(Eigen::Vector2f point);
         bool isOutsideImage(float x, float y);
+        
 
         
 };

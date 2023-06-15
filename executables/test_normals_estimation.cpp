@@ -20,11 +20,14 @@ int main (int argc, char** argv) {
     IntPairVector pose_point_correspondences;
     Vector2fVector points;
     Vector3fVector poses;
+    Vector2fVector normals;
+
+
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, points, pose_point_correspondences, 100, 200);
-
+    dataset.load_data(poses, points, pose_point_correspondences, 3000, 2);
+ 
     cout << poses.size() << " poses have been loaded." << endl;
     cout << points.size() << " points have been loaded." << endl;
     
@@ -45,13 +48,33 @@ int main (int argc, char** argv) {
     finder.compute_same_pose_correspondences();
 
     vector<IntVector> same_pose_correspondences = finder.same_pose_correspondences();
-       
+    
+    cout << "Estimate points normals.." << endl;
+    FloatVector points_normals;
+    
+    for (size_t i = 0; i < same_pose_correspondences.size(); i++)
+    {   
+        // cout << same_pose_correspondences[i].size() << " points will be used to estimater the point " << i << " normal" << endl;
+        // given a bunch of points compute the line straight line fitting the points and its normal vector
+        float point_normal_angle; 
+        if(estimate_normal_of_line_fitting_points(points, same_pose_correspondences[i], point_normal_angle)) points_normal[i] = point_normal_angle;
+        // cout << point_normal_angle << endl;
+        points_normals.push_back(point_normal_angle);
+
+        Vector2f normal;
+        normal << cos(point_normal_angle), sin(point_normal_angle);
+        normals.push_back(normal);
+
+    }
+    
+    
+    cout << "Estimate points normals complete." << endl << endl;         
 
 
     int width = 800;
     int height = 800;
   
-    Drawer drawer(width, height, "test_map_correspondence");
+    Drawer drawer(width, height, "test_normal_estimation");
 
     // DrawerController drawer_controller(5.0, 5.0, 0.5);
     DrawerController drawer_controller(height/4, width/4, 5.0, 5.0, 5.0, 5.0);
@@ -74,7 +97,7 @@ int main (int argc, char** argv) {
         
         drawer.drawPoints(points, drawer_controller, black);
         
-        drawer.drawCorrespondences(points, finder.other_pose_correspondences(), drawer_controller, green);
+        drawer.drawNormals(points, points_normals, drawer_controller, pink);
         
         drawer.show();
 
