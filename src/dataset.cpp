@@ -9,11 +9,11 @@ class DatasetRecord {
         float _range_max;
         float _angle_min;
         float _angle_max;
-        int _n_beams;
+        size_t _n_beams;
         vector<float> _values;
     
     public:
-        DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, int n_beams, vector<float> values);
+        DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, vector<float> values);
         ~DatasetRecord();
 
         float ts();
@@ -23,7 +23,7 @@ class DatasetRecord {
         float range_max();
         float angle_min();
         float angle_max();
-        int n_beams();
+        size_t n_beams();
         vector<float> values();
     
 
@@ -31,7 +31,7 @@ class DatasetRecord {
         
 };
 
-DatasetRecord::DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, int n_beams, vector<float> values){
+DatasetRecord::DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, vector<float> values){
         _ts = ts;
         _pose = pose;
         _offset = offset;
@@ -75,7 +75,7 @@ float DatasetRecord::angle_max(){
     return _angle_max;
 }
 
-int DatasetRecord::n_beams(){
+size_t DatasetRecord::n_beams(){
     return _n_beams;
 }
 
@@ -100,7 +100,7 @@ class Dataset
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();
-        void load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVector &pose_point_correspondences, size_t from_records, size_t to_records);
+        void load_data(Vector3fVector &poses, Vector3fVector &sensor_poses, vector<Vector2fVector> &points, IntPairVector& pose_point_correspondences, vector<vector<int>>& valid_points, size_t from_records, size_t num_records_to_load);
 
 
 };
@@ -182,7 +182,7 @@ DatasetRecord Dataset::decode_line(string line){
     return record;
 }
 
-void Dataset::load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVector &pose_point_correspondences, size_t from_records=0, size_t num_records_to_load=0){
+void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, vector<Vector2fVector>& points, IntPairVector& pose_point_correspondences, vector<vector<int>>& valid_points, size_t from_records, size_t num_records_to_load){
 
     
     size_t num_poses = num_records();
@@ -209,48 +209,58 @@ void Dataset::load_data(Vector3fVector &poses, Vector2fVector &points, IntPairVe
     cout << "from_records: " << from_records << " num_records_to_load: " << num_records_to_load << endl;
     cout << "num_records: " << num_poses << endl;
    
-    poses.resize(num_records_to_load);
-    
     Eigen::Vector3f pose;
+    Eigen::Vector3f sensor_pose;
     Eigen::Vector2f point;
-    Vector2fVector valid_points;
-    IntPairVector pose_valid_point_correspondences;
+    IntPair pose_point_correspondence;
 
-    int total_beams = 0;
-    float angle_total_range, beams_angle_delta, point_x, point_y, value;
     for (size_t pose_index = 0; pose_index < num_records_to_load; pose_index++)
     {
+        // read record
         DatasetRecord record = records()[from_records + pose_index];
+        
+        // read and save pose
         pose << record.pose()[0], record.pose()[1], record.pose()[2];
-        poses[pose_index] = pose;
+        sensor_pose << record.offset()[0], record.offset()[1], record.offset()[2];
+        
 
-        angle_total_range = abs(record.angle_min()) + abs(record.angle_max());
-        beams_angle_delta = angle_total_range / record.n_beams();
+        poses.push_back(pose);
+        sensor_poses.push_back(sensor_pose);
 
-        for(int beam_index=0; beam_index<record.n_beams(); beam_index++){
-            value = record.values()[beam_index];
-            if (value <= record.range_min() || value >= record.range_max()) continue; // out of range (sensor reading is too far or too close)
-            point_x = pose.x() + value * cos(pose.z() + record.angle_min() + beams_angle_delta * beam_index ); 
-            point_y = pose.y() + value * sin(pose.z() + record.angle_min() + beams_angle_delta * beam_index ); 
-            point << point_x, point_y;
-            valid_points.push_back(point);
-            pose_valid_point_correspondences.push_back(IntPair(pose_index, total_beams));
-            total_beams++;
+        // read and save scanned points
+        float angle_min = record.angle_min();
+        float angle_max = record.angle_max();
+        float angle_total = abs(angle_max - angle_min);
+        float angle_offset = angle_total / record.n_beams();
+
+
+        Vector2fVector pose_points;
+        vector<int> pose_valid_points;
+        float angle = angle_min;
+        for (size_t beam_index = 0; beam_index < record.n_beams(); beam_index++)
+        {   
+            float value = record.values()[beam_index];
+            if (value > record.range_min() && value < record.range_max()) {
+                pose_valid_points.push_back(1);
+                pose_point_correspondence = IntPair(pose_index, beam_index);
+                pose_point_correspondences.push_back(pose_point_correspondence);
+        
+            }
+            else { // else: out of range (sensor reading is too far or too close)
+                pose_valid_points.push_back(0);
+            }
+                
+            point << value * cos(angle), value * sin(angle);
+            pose_points.push_back(point);
+            
+            angle = angle + angle_offset;
         }
+        
+        valid_points.push_back(pose_valid_points);
+        points.push_back(pose_points);
 
         
     }
-    
-    size_t num_points = valid_points.size();
-    points.resize(num_points);
-    pose_point_correspondences.resize(num_points);
-    for (size_t point_index = 0; point_index < num_points; point_index++)
-    {
-        points[point_index] = valid_points[point_index];
-        pose_point_correspondences[point_index] = pose_valid_point_correspondences[point_index];
-    }
-    
-    
-       
+        
 }
 

@@ -45,21 +45,27 @@ class Drawer{
         void clear();
         void show();
 
-        void drawLine(Eigen::Vector2f start_point, Eigen::Vector2f end_point, DrawerController controller, Scalar color);
-        void drawLines(Vector2fVector start_points, Vector2fVector end_points , DrawerController controller, Scalar color);
+        void drawLine(Eigen::Vector2f& start_point, Eigen::Vector2f& end_point, DrawerController& controller, Scalar& color);
+        void drawLines(Vector2fVector& start_points, Vector2fVector& end_points , DrawerController& controller, Scalar& color);
         
-        void drawPoint(Eigen::Vector2f point, DrawerController controller, Scalar color);
-        void drawPoints(Vector2fVector points, DrawerController controller, Scalar color);
+        void drawPoint(Eigen::Vector2f& point, DrawerController& controller, Scalar& color);
+        void drawPoints(Vector2fVector& points, DrawerController& controller, Scalar& color);
         
-        void drawPose(Eigen::Vector3f pose, DrawerController controller, Scalar color);
-        void drawPoses(Vector3fVector poses, DrawerController controller, Scalar color);
+        void drawPose(Eigen::Vector3f& pose, DrawerController& controller, Scalar& color);
+        void drawPoses(Vector3fVector& poses, DrawerController& controller, Scalar& color);
 
-        void drawCorrespondences(Vector2fVector points, IntPairVector correspondences, DrawerController controller, Scalar color);
+        void drawSensor(Eigen::Vector3f& sensor_pose, DrawerController& controller, Scalar& color);
+        void drawSensors(Vector3fVector& sensors_poses, DrawerController& controller, Scalar& color);
+
         
-        void drawNormal(Eigen::Vector2f point, float angle, DrawerController controller, Scalar color);
-        void drawNormals(Vector2fVector &points, FloatVector &angles, DrawerController controller, Scalar color);
+        void drawPosesPoints(Vector3fVector& poses, Vector3fVector& sensor_poses, vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color);
         
-        bool isOutsideImage(Eigen::Vector2f point);
+        void drawCorrespondences(vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color);
+        
+        void drawNormal(Eigen::Vector2f& point, float angle, DrawerController& controller, Scalar& color);
+        void drawNormals(Vector2fVector& points, FloatVector &angles, DrawerController& controller, Scalar& color);
+        
+        bool isOutsideImage(Eigen::Vector2f& point);
         bool isOutsideImage(float x, float y);
         
 

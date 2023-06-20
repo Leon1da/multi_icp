@@ -142,6 +142,32 @@ test_map_correspondence/fast:
 	$(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/build
 .PHONY : test_map_correspondence/fast
 
+#=============================================================================
+# Target rules for targets named test_normals_estimation
+
+# Build rule for target.
+test_normals_estimation: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_normals_estimation
+.PHONY : test_normals_estimation
+
+# fast build rule for target.
+test_normals_estimation/fast:
+	$(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/build
+.PHONY : test_normals_estimation/fast
+
+#=============================================================================
+# Target rules for targets named test_multi_icp_solver
+
+# Build rule for target.
+test_multi_icp_solver: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_multi_icp_solver
+.PHONY : test_multi_icp_solver
+
+# fast build rule for target.
+test_multi_icp_solver/fast:
+	$(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/build
+.PHONY : test_multi_icp_solver/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -152,6 +178,8 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test_dataset_reader"
 	@echo "... test_map_correspondence"
+	@echo "... test_multi_icp_solver"
+	@echo "... test_normals_estimation"
 .PHONY : help
 
 

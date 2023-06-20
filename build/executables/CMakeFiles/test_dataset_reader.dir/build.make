@@ -97,24 +97,10 @@ executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.s"
 	cd /home/leonardo/multi_icp/build/executables && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/leonardo/multi_icp/src/dataset.cpp -o CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.s
 
-executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o: executables/CMakeFiles/test_dataset_reader.dir/flags.make
-executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o: /home/leonardo/multi_icp/src/map.cpp
-executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o: executables/CMakeFiles/test_dataset_reader.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leonardo/multi_icp/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o"
-	cd /home/leonardo/multi_icp/build/executables && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o -MF CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o.d -o CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o -c /home/leonardo/multi_icp/src/map.cpp
-
-executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.i"
-	cd /home/leonardo/multi_icp/build/executables && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/leonardo/multi_icp/src/map.cpp > CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.i
-
-executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.s"
-	cd /home/leonardo/multi_icp/build/executables && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/leonardo/multi_icp/src/map.cpp -o CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.s
-
 executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o: executables/CMakeFiles/test_dataset_reader.dir/flags.make
 executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o: /home/leonardo/multi_icp/src/drawer.cpp
 executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o: executables/CMakeFiles/test_dataset_reader.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leonardo/multi_icp/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leonardo/multi_icp/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o"
 	cd /home/leonardo/multi_icp/build/executables && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o -MF CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o.d -o CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o -c /home/leonardo/multi_icp/src/drawer.cpp
 
 executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.i: cmake_force
@@ -129,7 +115,6 @@ executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.s: cmake_force
 test_dataset_reader_OBJECTS = \
 "CMakeFiles/test_dataset_reader.dir/test_dataset_reader.cpp.o" \
 "CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.o" \
-"CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o" \
 "CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o"
 
 # External object files for target test_dataset_reader
@@ -137,7 +122,6 @@ test_dataset_reader_EXTERNAL_OBJECTS =
 
 executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/test_dataset_reader.cpp.o
 executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.o
-executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o
 executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o
 executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/build.make
 executables/test_dataset_reader: /usr/lib/x86_64-linux-gnu/libopencv_stitching.so.4.2.0
@@ -189,7 +173,7 @@ executables/test_dataset_reader: /usr/lib/x86_64-linux-gnu/libopencv_photo.so.4.
 executables/test_dataset_reader: /usr/lib/x86_64-linux-gnu/libopencv_imgproc.so.4.2.0
 executables/test_dataset_reader: /usr/lib/x86_64-linux-gnu/libopencv_core.so.4.2.0
 executables/test_dataset_reader: executables/CMakeFiles/test_dataset_reader.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/leonardo/multi_icp/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable test_dataset_reader"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/leonardo/multi_icp/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable test_dataset_reader"
 	cd /home/leonardo/multi_icp/build/executables && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test_dataset_reader.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

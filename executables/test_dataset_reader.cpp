@@ -16,26 +16,39 @@ int main (int argc, char** argv) {
     Dataset dataset(dataset_filename);
 
     IntPairVector pose_point_correspondences;
-    Vector2fVector points;
+    vector<Vector2fVector> points;
+    vector<vector<int>> valid_points;
     Vector3fVector poses;
+    Vector3fVector sensor_poses;
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, points, pose_point_correspondences);
+    dataset.load_data(poses, sensor_poses, points, pose_point_correspondences, valid_points, 0, 10);
 
+    for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
+    {
+        poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));
+    }
     
     cout << poses.size() << " poses have been loaded." << endl;
-    cout << points.size() << " points have been loaded." << endl;
-    
-    cout << "Loading data complete." << endl << endl;
 
+    size_t num_points = 0;
+    for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
+      for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
+        if (valid_points[pose_index][point_index]) num_points++;
+
+    cout << num_points << " valid points have been loaded." << endl;
+
+
+    cout << "Loading data complete." << endl << endl;
+    
             
     int width = 800;
     int height = 800;
   
     Drawer drawer(width, height, "test_dataset_reader");
 
-    DrawerController drawer_controller(height/4, width/4, 5.0, 5.0, 5.0, 5.0);
+    DrawerController drawer_controller(height/4, width/4, 1.0, 5.0, 5.0, 5.0);
     
     Scalar blue(255, 0, 0);
     Scalar red(0, 0, 255);
@@ -51,9 +64,26 @@ int main (int argc, char** argv) {
 
         drawer.clear();
         
-        drawer.drawPoses(poses, drawer_controller, red);
         
-        drawer.drawPoints(points, drawer_controller, black);
+        for (size_t pose_index = 0; pose_index < points.size(); pose_index++)
+        {
+          // draw pose
+          drawer.drawPose(poses[pose_index], drawer_controller, red);
+          
+          // draw point
+          for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
+          { 
+            if (valid_points[pose_index][point_index]) {
+              Vector2f point_world = points[pose_index][point_index];
+              point_world = v2t(poses[pose_index]) * point_world;
+              drawer.drawPoint(point_world, drawer_controller, black); 
+            
+            }
+          }
+          
+        }
+
+
         
         drawer.show();
 

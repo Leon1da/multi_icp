@@ -1,8 +1,0 @@
-# ninja log v5
-0	20544	1684791519495239100	executables/CMakeFiles/test_dataset_reader.dir/test_dataset_reader.cpp.o	1f0bb711611ab896
-1	22510	1684791521465230488	executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.o	dffcfc4b4b7e8dc7
-3	20577	1684791519525238969	executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.o	ba7a8941d275ea37
-1	20641	1684791519565238794	executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o	bdcc417b256b688a
-3	20716	1684791519645238445	executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.o	d0eaee1051790ef5
-1	20949	1684791519905237308	executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o	92ebe460189e54d3
-2	22405	1684791521365230926	executables/CMakeFiles/test_map_correspondence.dir/__/src/dataset.cpp.o	76478b4738b15793

@@ -144,29 +144,33 @@ test_map_correspondence/fast:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/build
 .PHONY : test_map_correspondence/fast
 
-__/src/correspondence_finder.o: __/src/correspondence_finder.cpp.o
-.PHONY : __/src/correspondence_finder.o
+# Convenience name for target.
+executables/CMakeFiles/test_normals_estimation.dir/rule:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 executables/CMakeFiles/test_normals_estimation.dir/rule
+.PHONY : executables/CMakeFiles/test_normals_estimation.dir/rule
 
-# target to build an object file
-__/src/correspondence_finder.cpp.o:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/correspondence_finder.cpp.o
-.PHONY : __/src/correspondence_finder.cpp.o
+# Convenience name for target.
+test_normals_estimation: executables/CMakeFiles/test_normals_estimation.dir/rule
+.PHONY : test_normals_estimation
 
-__/src/correspondence_finder.i: __/src/correspondence_finder.cpp.i
-.PHONY : __/src/correspondence_finder.i
+# fast build rule for target.
+test_normals_estimation/fast:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/build
+.PHONY : test_normals_estimation/fast
 
-# target to preprocess a source file
-__/src/correspondence_finder.cpp.i:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/correspondence_finder.cpp.i
-.PHONY : __/src/correspondence_finder.cpp.i
+# Convenience name for target.
+executables/CMakeFiles/test_multi_icp_solver.dir/rule:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 executables/CMakeFiles/test_multi_icp_solver.dir/rule
+.PHONY : executables/CMakeFiles/test_multi_icp_solver.dir/rule
 
-__/src/correspondence_finder.s: __/src/correspondence_finder.cpp.s
-.PHONY : __/src/correspondence_finder.s
+# Convenience name for target.
+test_multi_icp_solver: executables/CMakeFiles/test_multi_icp_solver.dir/rule
+.PHONY : test_multi_icp_solver
 
-# target to generate assembly for a file
-__/src/correspondence_finder.cpp.s:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/correspondence_finder.cpp.s
-.PHONY : __/src/correspondence_finder.cpp.s
+# fast build rule for target.
+test_multi_icp_solver/fast:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/build
+.PHONY : test_multi_icp_solver/fast
 
 __/src/dataset.o: __/src/dataset.cpp.o
 .PHONY : __/src/dataset.o
@@ -175,6 +179,8 @@ __/src/dataset.o: __/src/dataset.cpp.o
 __/src/dataset.cpp.o:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.o
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/dataset.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/dataset.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/dataset.cpp.o
 .PHONY : __/src/dataset.cpp.o
 
 __/src/dataset.i: __/src/dataset.cpp.i
@@ -184,6 +190,8 @@ __/src/dataset.i: __/src/dataset.cpp.i
 __/src/dataset.cpp.i:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.i
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/dataset.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/dataset.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/dataset.cpp.i
 .PHONY : __/src/dataset.cpp.i
 
 __/src/dataset.s: __/src/dataset.cpp.s
@@ -193,6 +201,8 @@ __/src/dataset.s: __/src/dataset.cpp.s
 __/src/dataset.cpp.s:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/dataset.cpp.s
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/dataset.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/dataset.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/dataset.cpp.s
 .PHONY : __/src/dataset.cpp.s
 
 __/src/drawer.o: __/src/drawer.cpp.o
@@ -202,6 +212,8 @@ __/src/drawer.o: __/src/drawer.cpp.o
 __/src/drawer.cpp.o:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/drawer.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/drawer.cpp.o
 .PHONY : __/src/drawer.cpp.o
 
 __/src/drawer.i: __/src/drawer.cpp.i
@@ -211,6 +223,8 @@ __/src/drawer.i: __/src/drawer.cpp.i
 __/src/drawer.cpp.i:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.i
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/drawer.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/drawer.cpp.i
 .PHONY : __/src/drawer.cpp.i
 
 __/src/drawer.s: __/src/drawer.cpp.s
@@ -220,34 +234,63 @@ __/src/drawer.s: __/src/drawer.cpp.s
 __/src/drawer.cpp.s:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.s
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/drawer.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/drawer.cpp.s
 .PHONY : __/src/drawer.cpp.s
 
-__/src/map.o: __/src/map.cpp.o
-.PHONY : __/src/map.o
+__/src/multi_icp_solver.o: __/src/multi_icp_solver.cpp.o
+.PHONY : __/src/multi_icp_solver.o
 
 # target to build an object file
-__/src/map.cpp.o:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.o
-.PHONY : __/src/map.cpp.o
+__/src/multi_icp_solver.cpp.o:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/multi_icp_solver.cpp.o
+.PHONY : __/src/multi_icp_solver.cpp.o
 
-__/src/map.i: __/src/map.cpp.i
-.PHONY : __/src/map.i
+__/src/multi_icp_solver.i: __/src/multi_icp_solver.cpp.i
+.PHONY : __/src/multi_icp_solver.i
 
 # target to preprocess a source file
-__/src/map.cpp.i:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.i
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.i
-.PHONY : __/src/map.cpp.i
+__/src/multi_icp_solver.cpp.i:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/multi_icp_solver.cpp.i
+.PHONY : __/src/multi_icp_solver.cpp.i
 
-__/src/map.s: __/src/map.cpp.s
-.PHONY : __/src/map.s
+__/src/multi_icp_solver.s: __/src/multi_icp_solver.cpp.s
+.PHONY : __/src/multi_icp_solver.s
 
 # target to generate assembly for a file
-__/src/map.cpp.s:
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_dataset_reader.dir/build.make executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.s
-	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.s
-.PHONY : __/src/map.cpp.s
+__/src/multi_icp_solver.cpp.s:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/multi_icp_solver.cpp.s
+.PHONY : __/src/multi_icp_solver.cpp.s
+
+__/src/utils.o: __/src/utils.cpp.o
+.PHONY : __/src/utils.o
+
+# target to build an object file
+__/src/utils.cpp.o:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/utils.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/utils.cpp.o
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/utils.cpp.o
+.PHONY : __/src/utils.cpp.o
+
+__/src/utils.i: __/src/utils.cpp.i
+.PHONY : __/src/utils.i
+
+# target to preprocess a source file
+__/src/utils.cpp.i:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/utils.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/utils.cpp.i
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/utils.cpp.i
+.PHONY : __/src/utils.cpp.i
+
+__/src/utils.s: __/src/utils.cpp.s
+.PHONY : __/src/utils.s
+
+# target to generate assembly for a file
+__/src/utils.cpp.s:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/__/src/utils.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/__/src/utils.cpp.s
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/__/src/utils.cpp.s
+.PHONY : __/src/utils.cpp.s
 
 test_dataset_reader.o: test_dataset_reader.cpp.o
 .PHONY : test_dataset_reader.o
@@ -297,6 +340,54 @@ test_map_correspondence.cpp.s:
 	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_map_correspondence.dir/build.make executables/CMakeFiles/test_map_correspondence.dir/test_map_correspondence.cpp.s
 .PHONY : test_map_correspondence.cpp.s
 
+test_multi_icp_solver.o: test_multi_icp_solver.cpp.o
+.PHONY : test_multi_icp_solver.o
+
+# target to build an object file
+test_multi_icp_solver.cpp.o:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/test_multi_icp_solver.cpp.o
+.PHONY : test_multi_icp_solver.cpp.o
+
+test_multi_icp_solver.i: test_multi_icp_solver.cpp.i
+.PHONY : test_multi_icp_solver.i
+
+# target to preprocess a source file
+test_multi_icp_solver.cpp.i:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/test_multi_icp_solver.cpp.i
+.PHONY : test_multi_icp_solver.cpp.i
+
+test_multi_icp_solver.s: test_multi_icp_solver.cpp.s
+.PHONY : test_multi_icp_solver.s
+
+# target to generate assembly for a file
+test_multi_icp_solver.cpp.s:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_multi_icp_solver.dir/build.make executables/CMakeFiles/test_multi_icp_solver.dir/test_multi_icp_solver.cpp.s
+.PHONY : test_multi_icp_solver.cpp.s
+
+test_normals_estimation.o: test_normals_estimation.cpp.o
+.PHONY : test_normals_estimation.o
+
+# target to build an object file
+test_normals_estimation.cpp.o:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/test_normals_estimation.cpp.o
+.PHONY : test_normals_estimation.cpp.o
+
+test_normals_estimation.i: test_normals_estimation.cpp.i
+.PHONY : test_normals_estimation.i
+
+# target to preprocess a source file
+test_normals_estimation.cpp.i:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/test_normals_estimation.cpp.i
+.PHONY : test_normals_estimation.cpp.i
+
+test_normals_estimation.s: test_normals_estimation.cpp.s
+.PHONY : test_normals_estimation.s
+
+# target to generate assembly for a file
+test_normals_estimation.cpp.s:
+	cd /home/leonardo/multi_icp/build && $(MAKE) $(MAKESILENT) -f executables/CMakeFiles/test_normals_estimation.dir/build.make executables/CMakeFiles/test_normals_estimation.dir/test_normals_estimation.cpp.s
+.PHONY : test_normals_estimation.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -307,24 +398,32 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test_dataset_reader"
 	@echo "... test_map_correspondence"
-	@echo "... __/src/correspondence_finder.o"
-	@echo "... __/src/correspondence_finder.i"
-	@echo "... __/src/correspondence_finder.s"
+	@echo "... test_multi_icp_solver"
+	@echo "... test_normals_estimation"
 	@echo "... __/src/dataset.o"
 	@echo "... __/src/dataset.i"
 	@echo "... __/src/dataset.s"
 	@echo "... __/src/drawer.o"
 	@echo "... __/src/drawer.i"
 	@echo "... __/src/drawer.s"
-	@echo "... __/src/map.o"
-	@echo "... __/src/map.i"
-	@echo "... __/src/map.s"
+	@echo "... __/src/multi_icp_solver.o"
+	@echo "... __/src/multi_icp_solver.i"
+	@echo "... __/src/multi_icp_solver.s"
+	@echo "... __/src/utils.o"
+	@echo "... __/src/utils.i"
+	@echo "... __/src/utils.s"
 	@echo "... test_dataset_reader.o"
 	@echo "... test_dataset_reader.i"
 	@echo "... test_dataset_reader.s"
 	@echo "... test_map_correspondence.o"
 	@echo "... test_map_correspondence.i"
 	@echo "... test_map_correspondence.s"
+	@echo "... test_multi_icp_solver.o"
+	@echo "... test_multi_icp_solver.i"
+	@echo "... test_multi_icp_solver.s"
+	@echo "... test_normals_estimation.o"
+	@echo "... test_normals_estimation.i"
+	@echo "... test_normals_estimation.s"
 .PHONY : help
 
 

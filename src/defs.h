@@ -5,7 +5,9 @@
 #include <iterator>
 #include <vector>
 #include <iomanip>
+#include <queue>
 
+#include <Eigen/Eigenvalues> 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Cholesky>
@@ -18,129 +20,34 @@ using namespace cv;
 
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;
 typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > Vector2fVector;
-
 typedef std::vector<Eigen::Isometry2f, Eigen::aligned_allocator<Eigen::Isometry2f> > Isometry2fVector;
 
 
+typedef Eigen::Matrix<float, 1, 3> Matrix1_3f;
 
-typedef Eigen::Matrix<float, 2, 1> Vector2f;
-
-typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
 typedef Eigen::Matrix<float, 3, 3> Matrix3f;
 typedef Eigen::Matrix<float, 3, 1> Vector3f;
-
-typedef Eigen::Matrix<float, 2, 2> Matrix2f;
-typedef Eigen::Matrix<float, 2, 4> Matrix2_4f;
-
-typedef Eigen::Matrix<float, 4, 4> Matrix4f;
-typedef Eigen::Matrix<float, 4, 1> Vector4f;
-
-typedef Eigen::Matrix<float, 3, 6> Matrix3_6f;
 
 typedef Eigen::Matrix<float, 6, 6> Matrix6f;
 typedef Eigen::Matrix<float, 6, 1> Vector6f;
 
-typedef Eigen::Matrix<float, 6, 3> Matrix6_3f;
+
+typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
+typedef Eigen::Matrix<float, 2, 2> Matrix2f;
+typedef Eigen::Matrix<float, 2, 1> Vector2f;
 
 
-typedef std::vector<float> FloatVector;
-typedef std::pair<float, float> FloatPair;
 typedef std::vector<int> IntVector;
+typedef std::vector<float> FloatVector;
+
+typedef std::pair<float, float> FloatPair;
 typedef std::pair<int,int> IntPair;
-typedef std::vector<IntPair > IntPairVector;
-typedef std::pair<Eigen::Vector2f, Eigen::Vector2f> Vector2fPair;
 
-class Point2D : public std::array<float, 2>{
-    
-        
-    public:
 
-        // dimension of space (or "k" of k-d tree)
-        // KDTree class accesses this member
-        static const int DIM = 2;
+typedef std::vector<IntPair> IntPairVector;
 
-        // the constructors
-        Point2D() {}
-        
-        Point2D(float x, float y) {
-            (*this)[0] = x;
-            (*this)[1] = y;
-            
+typedef std::pair<IntPair, IntPair> Correspondence;
 
-        }
-        
-        Point2D(Eigen::Vector2f point)
-        { 
-            (*this)[0] = point.x();
-            (*this)[1] = point.y();
-            
-        }
-
-        float x(){
-            return (*this)[0];
-        }
-
-        float y(){
-            return (*this)[1];
-        }
-
-};
-
-class Pose2D{
-    
-    private:
-
-        Eigen::Vector3f _pose;
-
-        
-    public:
-
-        Pose2D(){
-
-        }
-
-        Pose2D(float x, float y, float theta){
-            _pose = Eigen::Vector3f(x, y, theta);
-        }
-
-        Pose2D(Eigen::Vector3f pose){
-            _pose = pose;
-        }
-
-        float x(){
-            return _pose.x();
-        }
-
-        float y(){
-            return _pose.y();
-        }
-
-        float theta(){
-            return _pose.z();
-        }
-
-};
-
-class Line2D{
-    private:
-        Point2D _src;
-        Point2D _dst;
-    public:
-        
-        Line2D(Point2D src, Point2D dst){
-            _src = src;
-            _dst = dst;
-        }
-
-        Point2D src(){
-            return _src;
-        }
-
-        Point2D dst(){
-            return _dst;
-        }
-
-};
 
 
 inline Eigen::Isometry3f v2t(const Vector6f& t){
@@ -211,6 +118,15 @@ inline Eigen::Matrix3f Rz(float rot_z){
     R << c,  -s,  0,
         s,  c,  0,
         0,  0,  1;
+    return R;
+}
+
+inline Eigen::Isometry2f dRz(float rot_z){
+    Eigen::Isometry2f R;
+    float c=cos(rot_z);
+    float s=sin(rot_z);
+    R.setIdentity();
+    R.linear() << -s, -c, c, -s;
     return R;
 }
 

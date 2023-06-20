@@ -13,12 +13,6 @@
 },
 {
   "directory": "/home/leonardo/multi_icp/build",
-  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o -c /home/leonardo/multi_icp/src/map.cpp",
-  "file": "/home/leonardo/multi_icp/src/map.cpp",
-  "output": "executables/CMakeFiles/test_dataset_reader.dir/__/src/map.cpp.o"
-},
-{
-  "directory": "/home/leonardo/multi_icp/build",
   "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o -c /home/leonardo/multi_icp/src/drawer.cpp",
   "file": "/home/leonardo/multi_icp/src/drawer.cpp",
   "output": "executables/CMakeFiles/test_dataset_reader.dir/__/src/drawer.cpp.o"
@@ -37,20 +31,68 @@
 },
 {
   "directory": "/home/leonardo/multi_icp/build",
-  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.o -c /home/leonardo/multi_icp/src/map.cpp",
-  "file": "/home/leonardo/multi_icp/src/map.cpp",
-  "output": "executables/CMakeFiles/test_map_correspondence.dir/__/src/map.cpp.o"
-},
-{
-  "directory": "/home/leonardo/multi_icp/build",
   "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.o -c /home/leonardo/multi_icp/src/drawer.cpp",
   "file": "/home/leonardo/multi_icp/src/drawer.cpp",
   "output": "executables/CMakeFiles/test_map_correspondence.dir/__/src/drawer.cpp.o"
 },
 {
   "directory": "/home/leonardo/multi_icp/build",
-  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_map_correspondence.dir/__/src/correspondence_finder.cpp.o -c /home/leonardo/multi_icp/src/correspondence_finder.cpp",
-  "file": "/home/leonardo/multi_icp/src/correspondence_finder.cpp",
-  "output": "executables/CMakeFiles/test_map_correspondence.dir/__/src/correspondence_finder.cpp.o"
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_map_correspondence.dir/__/src/utils.cpp.o -c /home/leonardo/multi_icp/src/utils.cpp",
+  "file": "/home/leonardo/multi_icp/src/utils.cpp",
+  "output": "executables/CMakeFiles/test_map_correspondence.dir/__/src/utils.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_normals_estimation.dir/test_normals_estimation.cpp.o -c /home/leonardo/multi_icp/executables/test_normals_estimation.cpp",
+  "file": "/home/leonardo/multi_icp/executables/test_normals_estimation.cpp",
+  "output": "executables/CMakeFiles/test_normals_estimation.dir/test_normals_estimation.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_normals_estimation.dir/__/src/dataset.cpp.o -c /home/leonardo/multi_icp/src/dataset.cpp",
+  "file": "/home/leonardo/multi_icp/src/dataset.cpp",
+  "output": "executables/CMakeFiles/test_normals_estimation.dir/__/src/dataset.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_normals_estimation.dir/__/src/drawer.cpp.o -c /home/leonardo/multi_icp/src/drawer.cpp",
+  "file": "/home/leonardo/multi_icp/src/drawer.cpp",
+  "output": "executables/CMakeFiles/test_normals_estimation.dir/__/src/drawer.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_normals_estimation.dir/__/src/utils.cpp.o -c /home/leonardo/multi_icp/src/utils.cpp",
+  "file": "/home/leonardo/multi_icp/src/utils.cpp",
+  "output": "executables/CMakeFiles/test_normals_estimation.dir/__/src/utils.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_multi_icp_solver.dir/test_multi_icp_solver.cpp.o -c /home/leonardo/multi_icp/executables/test_multi_icp_solver.cpp",
+  "file": "/home/leonardo/multi_icp/executables/test_multi_icp_solver.cpp",
+  "output": "executables/CMakeFiles/test_multi_icp_solver.dir/test_multi_icp_solver.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_multi_icp_solver.dir/__/src/dataset.cpp.o -c /home/leonardo/multi_icp/src/dataset.cpp",
+  "file": "/home/leonardo/multi_icp/src/dataset.cpp",
+  "output": "executables/CMakeFiles/test_multi_icp_solver.dir/__/src/dataset.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_multi_icp_solver.dir/__/src/drawer.cpp.o -c /home/leonardo/multi_icp/src/drawer.cpp",
+  "file": "/home/leonardo/multi_icp/src/drawer.cpp",
+  "output": "executables/CMakeFiles/test_multi_icp_solver.dir/__/src/drawer.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_multi_icp_solver.dir/__/src/utils.cpp.o -c /home/leonardo/multi_icp/src/utils.cpp",
+  "file": "/home/leonardo/multi_icp/src/utils.cpp",
+  "output": "executables/CMakeFiles/test_multi_icp_solver.dir/__/src/utils.cpp.o"
+},
+{
+  "directory": "/home/leonardo/multi_icp/build",
+  "command": "/usr/bin/g++ -I/usr/include/eigen3 -I/home/leonardo/multi_icp/src -isystem /usr/include/opencv4 -Wall -std=c++11 -O3 -DNDEBUG -g -o executables/CMakeFiles/test_multi_icp_solver.dir/__/src/multi_icp_solver.cpp.o -c /home/leonardo/multi_icp/src/multi_icp_solver.cpp",
+  "file": "/home/leonardo/multi_icp/src/multi_icp_solver.cpp",
+  "output": "executables/CMakeFiles/test_multi_icp_solver.dir/__/src/multi_icp_solver.cpp.o"
 }
 ]
