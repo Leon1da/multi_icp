@@ -1,149 +1,18 @@
 #include "defs.h"
 
 #include "dataset.h"
-#include "drawer.h"
-
-#include "utils.h"
 #include "kdtree.h"
 #include "utils.h"
-
 #include "multi_icp_solver.h"
 
+#include "drawer.h"
 
 int main (int argc, char** argv) {
     
+
   
     cout << "Multi Iterative Closest Points (ICP)." << endl << endl;
-    
-    std::string dataset_filename = "/home/leonardo/multi_icp/dataset/dataset_test.txt";
 
-    Dataset dataset(dataset_filename);
-
-    IntPairVector pose_point_correspondences;
-    vector<Vector2fVector> points;
-    vector<vector<int>> valid_points;
-    Vector3fVector poses;
-    Vector3fVector sensor_poses;
-    
-    cout << "Loading data.." << endl;
-
-    dataset.load_data(poses, sensor_poses, points, pose_point_correspondences, valid_points, 0, 50);
-    
-    size_t num_poses = poses.size();
-    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
-    {
-        poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));
-    }
-    
-    cout << num_poses << " poses have been loaded." << endl;
-
-    size_t num_points = 0;
-    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
-      for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
-        if (valid_points[pose_index][point_index]) num_points++;
-
-    cout << num_points << " valid points have been loaded." << endl;
-
-
-    cout << "Loading data complete." << endl << endl;
-    
-    
-    cout << "Loading correspondence finder." << endl;
-
-    kdt::CorrespondenceFinder finder;
-    finder.init(poses, points, pose_point_correspondences);
-
-    cout << "Loading correspondence finder complete." << endl << endl;
-
-    vector<Vector2fVector> normals(valid_points.size());
-    for (size_t i = 0; i < valid_points.size(); i++)
-    {
-        normals[i] = Vector2fVector(valid_points[i].size());
-    }
-    
-    cout << "Finding for local correspondences." << endl;
-    
-    FloatPair sv;
-
-    for (size_t index = 0; index < pose_point_correspondences.size(); index++)
-    {
-      IntPair pose_point_correspondence = pose_point_correspondences[index];
-      IntPairVector local_neighbors;
-      if (finder.find_local_neighbors(pose_point_correspondence, 11, local_neighbors))
-      {
-
-        
-        // estimate normals LEAST SQUARES
-        float normal_angle;
-        if (normal_of_points(points, local_neighbors, normal_angle)){
-            
-            int pose_index = pose_point_correspondence.first;
-            int point_index = pose_point_correspondence.second;
-            Vector2f normal;
-            normal << cos(normal_angle), sin(normal_angle);
-        
-            normals[pose_index][point_index] = normal;
-        }
-      }
-    
-
-      // cout << '\r' << "Correspondence " << index << " / " << pose_point_correspondences.size() << "." << flush;
-      
-      // cout << "Local neighbors" << endl;
-      // for (auto n : local_neighbors) cout << " [ " << n.first << " " << n.second << " ]" << endl;
-      
-    }
-
-
-
- 
-
-    cout << endl;
-    
-    cout << "Finding for local correspondences ok." << endl;
-    
-    cout << "Finding for global correspondences." << endl;
-    
-    // finding for global correspondences
-   
-    vector<Correspondence> correspondences;
-   
-    for (size_t index = 0; index < pose_point_correspondences.size(); index++)
-    {
-      IntPair pose_point_correspondence = pose_point_correspondences[index];
-      IntPair neighbor;
-      if (finder.find_global_neighbor(pose_point_correspondence, neighbor))
-      {
-        Correspondence c(pose_point_correspondence, neighbor);
-        correspondences.push_back(c);
-      }
-
-    }
-
-    cout << endl;
-
-    cout << "Finding for global correspondences ok." << endl;
-
-    cout << "Init Multi ICP Solver.." << endl;
-    MultiICPSolver solver;
-
-    cout << "Initializing state.." << endl;
-    Isometry2fVector state(num_poses);
-    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
-    {
-        Eigen::Isometry2f state_pose = Eigen::Isometry2f::Identity();
-        state[pose_index] = state_pose;
-        
-    }
-
-    
-    cout << "Initializing state ok." << endl;
-
-    solver.init(state, poses, points, normals);
-    
-    cout << "Init Multi ICP Solver ok." << endl;
-    
-    
     int width = 800;
     int height = 800;
   
@@ -160,6 +29,187 @@ int main (int argc, char** argv) {
     Scalar black(0, 0, 0);
     Scalar white(255, 255, 255);
     
+    
+    std::string dataset_filename = "/home/leonardo/multi_icp/dataset/dataset_test.txt";
+
+    Dataset dataset(dataset_filename);
+
+    vector<vector<MapPoint>> map;
+
+    Vector2fVector points;
+    Vector3fVector poses;
+    Vector3fVector sensor_poses;
+    
+    
+    cout << "Loading data.." << endl;
+
+    dataset.load_data(poses, sensor_poses, points, map, 0, 50);
+
+
+    // for(auto pose : poses) cout << pose << endl << endl;
+    // for(auto point : points) cout << point << endl << endl;
+
+    size_t num_poses = poses.size();
+    size_t num_points = points.size();
+
+    cout << num_poses << " poses have been loaded." << endl;
+
+    cout << num_points << " points have been loaded." << endl;
+
+    
+    // apply sensor offset to pose (it is a semplification not strictly needed).
+    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+    {
+        poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));
+    }
+    
+
+    cout << "Loading data complete." << endl << endl;
+    
+    cout << "Loading correspondence finder." << endl;
+
+    kdt::CorrespondenceFinder finder;
+    finder.init(poses, points, map);
+
+    cout << "Loading correspondence finder complete." << endl << endl;
+    
+    cout << "Finding for local correspondences." << endl;
+
+    vector<vector<Correspondence>> local_correspondences;
+    for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
+    {
+      for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+      {
+        MapPoint& map_point = map[pose_index][point_index];       
+        // Finding for local correspondences 
+        IntPairVector local_neighbors;
+        // if (finder.find_local_neighbors(map_point.pose_index(), map_point.point_index(), 10, local_neighbors))
+        if (finder.find_local_neighbors(map_point.pose_index(), map_point.point_index(), 0.05, local_neighbors))
+        {
+          size_t num_neighbors = local_neighbors.size();
+          if (num_neighbors){
+            vector<Correspondence> cs;
+            for (size_t local_neighbor_index = 0; local_neighbor_index < num_neighbors; local_neighbor_index++)
+            {
+              cs.push_back(Correspondence(IntPair(map_point.pose_index(), map_point.point_index()), local_neighbors[local_neighbor_index]));
+            }
+            local_correspondences.push_back(cs);
+            map_point.set_local_correspondences_index(local_correspondences.size() - 1, num_neighbors);
+          }
+          // cout << "[ " << pose_index << " " << point_index << " ] " << local_neighbors.size() << " local_neighbors found." << endl;
+        }
+      }
+    }
+
+    cout << "Finding for local correspondences ok." << endl;
+
+    cout << "Estimating surface normals" << endl;
+    
+    Vector2fVector normals;
+    
+    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+    {
+      for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+      {
+        MapPoint& map_point = map[pose_index][point_index];
+        if (map_point.num_local_correspondences())
+        {
+          vector<Correspondence> correspondences = local_correspondences[map_point.local_correspondences_index()];
+          IntVector indices;
+          for (auto correspondence : correspondences) indices.push_back(correspondence._dst_point);
+
+          // compute the normal using the line fitting the points cloud
+          float normal_vector_angle;
+          if (estimate_normal(points, indices, normal_vector_angle)) {
+            Vector2f normal;
+            normal << cos(normal_vector_angle), sin(normal_vector_angle);
+            normals.push_back(normal);
+            map_point.set_normal_index(normals.size() - 1);
+            // cout << "classic normal " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
+          }
+          
+          // // compute the normal using the covariance matrix of the point cloud
+          // Vector2f normal;
+          // if (estimate_normal(points, indices, normal)) {
+          //   normals.push_back(normal);
+          //   map_point.set_normal_index(normals.size() - 1);
+
+          // }
+          
+        }
+        
+      }
+      
+    }
+
+    cout << normals.size() << " normals have been estimated." << endl;
+    
+    cout << "Estimating surface normals complete." << endl;
+
+    
+    cout << "Finding for global correspondences." << endl;
+    vector<Correspondence> global_correspondences;
+    for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
+    {
+      for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+      {
+        MapPoint& map_point = map[pose_index][point_index];
+        // Finding for global correspondences 
+        IntPair global_neighbor;
+        if (finder.find_global_neighbor(map_point.pose_index(), map_point.point_index(), 0.05, global_neighbor, 20))
+        // if (finder.find_global_neighbor(map_point.pose_index(), map_point.point_index(), global_neighbor))
+        {
+          global_correspondences.push_back(Correspondence(IntPair(pose_index, point_index), global_neighbor));
+          map_point.set_global_correspondences_index(global_correspondences.size() - 1, 1);
+          // cout << "[ " << pose_index << " " << point_index << " ] global_neighbor found ( " << global_neighbor.first << " " << global_neighbor.second << " )." << endl;
+        }
+      }
+    }
+    cout << "Finding for global correspondences ok." << endl;
+    
+
+    cout << "Init Multi ICP Solver.." << endl;
+    MultiICPSolver solver;
+
+    cout << "Initializing state.." << endl;
+    Isometry2fVector state(num_poses);
+    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+    {
+        Eigen::Isometry2f state_pose = Eigen::Isometry2f::Identity();
+        state[pose_index] = state_pose;
+        
+    }
+
+    cout << "Initializing state ok." << endl;
+
+    solver.init(state, poses, points, normals);
+    
+    cout << "Init Multi ICP Solver ok." << endl;
+
+
+    
+    // will be passed to the optimization round
+    vector<Correspondence> total_correspondeces;
+    IntPairVector total_normals;
+
+    for (size_t correspondence_index = 0; correspondence_index < global_correspondences.size(); correspondence_index++)
+    {
+      Correspondence correspondence = global_correspondences[correspondence_index];
+      MapPoint src_map_point = map[correspondence._src_pose][correspondence._src_point];
+      MapPoint dst_map_point = map[correspondence._dst_pose][correspondence._dst_point];
+      if (src_map_point.has_normal() && dst_map_point.has_normal())   
+      {
+        Correspondence total_correspondece = Correspondence(src_map_point.pose_index(), src_map_point.point_index(), dst_map_point.pose_index(), dst_map_point.point_index());
+        total_correspondeces.push_back(total_correspondece);
+        total_normals.push_back(IntPair(src_map_point.normal_index(), dst_map_point.normal_index()));
+      }
+    }
+
+    cout << "#################################################################" << endl;
+            
+    cout << global_correspondences.size() << " points will be used for otpimization [total points: " << num_points << " ]" << endl;
+
+    
 
 
     char key=0;
@@ -168,53 +218,34 @@ int main (int argc, char** argv) {
 
         drawer.clear();
         
-        
-
-        drawer.drawPoses(poses, drawer_controller, red);
-        
-        for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
+        for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
-          // draw pose
-          drawer.drawPose(poses[pose_index], drawer_controller, red);
+          Vector3f world_pose = poses[pose_index];
+          drawer.drawPose(world_pose, drawer_controller, red);
 
-          // draw points and normals
-          for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
-          { 
-            if (valid_points[pose_index][point_index]) {
-
-                // draw point
-                Vector2f point_world = points[pose_index][point_index];
-                point_world = v2t(poses[pose_index])* point_world;
-                drawer.drawPoint(point_world, drawer_controller, black); 
-
-                // // draw normals
-                // Vector2f point_normal = normals[pose_index][point_index];
-                // point_normal = v2t(poses[pose_index]).rotation() * point_normal;
-                // //   cout << endl << point_normal << endl << endl;
-
-                // Vector2f start_point, end_point;
-                // start_point = point_world; // normal vector start from the point
-                // end_point = point_world + point_normal * 0.05;
-                // //   end_point = point_world + point_normal;
-                // drawer.drawLine(start_point, end_point, drawer_controller, green);
-            
-            
-            }
+          for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+          {
+            MapPoint map_point = map[pose_index][point_index];
+            Vector2f world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+            drawer.drawPoint(world_point, drawer_controller, black);
+          
           }
           
         }
 
-        // // draw correspondences
-        // for (size_t correspondece_index = 0; correspondece_index < correspondences.size(); correspondece_index++)
-        // {
-        //   Correspondence c = correspondences[correspondece_index];
-        //   Vector2f start_point, end_point;
-        //   start_point = v2t(poses[c.first.first]) * v2t(sensor_poses[c.first.first]) * points[c.first.first][c.first.second];
-        //   end_point = v2t(poses[c.second.first]) * v2t(sensor_poses[c.second.first]) * points[c.second.first][c.second.second];
-        //   drawer.drawLine(start_point, end_point, drawer_controller, green);
+        for (size_t correspondence_index = 0; correspondence_index < global_correspondences.size(); correspondence_index++)
+        {
+          Correspondence c = global_correspondences[correspondence_index];
+          
+          // cout << "[ " << c._src_pose << " " << c._src_point << " ] [ " << c._dst_pose << " " << c._dst_point << " ]" << endl;
+          Vector2f start_point = v2t(poses[map[c._src_pose][c._src_point].pose_index()]) * points[map[c._src_pose][c._src_point].point_index()];
+          Vector2f end_point = v2t(poses[map[c._dst_pose][c._dst_point].pose_index()]) * points[map[c._dst_pose][c._dst_point].point_index()];
+          drawer.drawLine(start_point, end_point, drawer_controller, green);
+
+        }
         
-        // }
         
+
 
         drawer.show();
 
@@ -224,38 +255,67 @@ int main (int argc, char** argv) {
 
         if (key == ' '){
 
-            cout << "Multi-ICP optimization .." << endl;
-            solver.oneRound(correspondences, false);
-            cout << "Multi-ICP optimization complete." << endl;
+            cout << "# Multi-ICP optimization .." << endl;
+            solver.oneRound(total_correspondeces, total_normals, false);
+            cout << "# Multi-ICP optimization complete." << endl;
             
-            cout << endl;
             cout << "####### Multi-ICP iteration #######" << endl; 
-            cout << "total points: " << correspondences.size() << endl;
-            cout << "inliers: " << solver.numInliers() << " outliers: " << solver.numOutliers() << endl;
-            cout << "error (inliers): " << solver.chiInliers() << " (outliers): " << solver.chiOutliers() << endl;
-            cout << "##############################################" << endl;
-
+            cout << "# inliers: " << solver.numInliers() << " outliers: " << solver.numOutliers() << endl;
+            cout << "# error (inliers): " << solver.chiInliers() << " (outliers): " << solver.chiOutliers() << endl;
+            cout << "#################################################################" << endl;
+            
             // update poses
-            for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+            for (size_t pose_index = 0; pose_index < state.size(); pose_index++)
             {
               poses[pose_index] = t2v(v2t(poses[pose_index]) * state[pose_index]);
 
             }
 
-            // update correspondences
-            correspondences.clear();
-            for (size_t index = 0; index < pose_point_correspondences.size(); index++)
+            cout << "Finding for new global correspondences." << endl;
+            global_correspondences.clear();
+            for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
             {
-              IntPair pose_point_correspondence = pose_point_correspondences[index];
-              IntPair neighbor;
-              if (finder.find_global_neighbor(pose_point_correspondence, neighbor))
+              for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
               {
-                Correspondence c(pose_point_correspondence, neighbor);
-                correspondences.push_back(c);
-              }
+                MapPoint& map_point = map[pose_index][point_index];
+                map_point.clear_global_correspondeces(); // IMPORTANT !!!
 
+                // Finding for global correspondences 
+                IntPair global_neighbor;
+                if (finder.find_global_neighbor(map_point.pose_index(), map_point.point_index(), 0.05, global_neighbor, 20))
+                // if (finder.find_global_neighbor(map_point.pose_index(), map_point.point_index(), global_neighbor))
+                {
+                  global_correspondences.push_back(Correspondence(IntPair(pose_index, point_index), global_neighbor));
+                  map_point.set_global_correspondences_index(global_correspondences.size() - 1, 1);
+                  // cout << "[ " << pose_index << " " << point_index << " ] global_neighbor found ( " << global_neighbor.first << " " << global_neighbor.second << " )." << endl;
+                }
+              }
             }
 
+            
+            cout << "Finding for new global correspondences ok." << endl;
+
+            total_correspondeces.clear();
+            total_normals.clear();
+            // will be passed to the optimization round
+
+            for (size_t correspondence_index = 0; correspondence_index < global_correspondences.size(); correspondence_index++)
+            {
+              Correspondence correspondence = global_correspondences[correspondence_index];
+              MapPoint src_map_point = map[correspondence._src_pose][correspondence._src_point];
+              MapPoint dst_map_point = map[correspondence._dst_pose][correspondence._dst_point];
+              if (src_map_point.has_normal() && dst_map_point.has_normal())   
+              {
+                Correspondence total_correspondece = Correspondence(src_map_point.pose_index(), src_map_point.point_index(), dst_map_point.pose_index(), dst_map_point.point_index());
+                total_correspondeces.push_back(total_correspondece);
+                total_normals.push_back(IntPair(src_map_point.normal_index(), dst_map_point.normal_index()));
+              }
+            }
+
+            
+            cout << global_correspondences.size() << " points will be used for otpimization [total points: " << num_points << " ]" << endl;
+
+            
             
 
         

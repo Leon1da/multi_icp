@@ -18,9 +18,9 @@
     
     private:
 
-      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const Correspondence& correspondence);
+      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const Correspondence& correspondence, const IntPair& normals_pair);
 
-      void linearize(const vector<Correspondence>& correspondences, bool keep_outliers);
+      void linearize(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers);
 
               
       Isometry2fVector* _state;                   //< this will hold our state
@@ -28,8 +28,8 @@
       float _damping;                             //< damping, to slow the solution
       int _min_num_inliers;                       //< if less inliers than this value, the solver stops
       const Vector3fVector* _poses;
-      const vector<Vector2fVector>* _points;      
-      const vector<Vector2fVector>* _normals;      
+      const Vector2fVector* _points;      
+      const Vector2fVector* _normals;      
       Eigen::MatrixXf _H;
       Eigen::VectorXf _b;
       float _chi_inliers;
@@ -49,8 +49,8 @@
       //! @param points: the points of the world
       void init(Isometry2fVector& state,
           const Vector3fVector& poses,
-          const vector<Vector2fVector>& points, 
-          const vector<Vector2fVector>& normals);
+          const Vector2fVector& points, 
+          const Vector2fVector& normals);
     
       inline float kernelThreshold() const {return _kernel_thereshold;}
 
@@ -78,7 +78,7 @@
       //! @param correspondences: the correspondences (first: measurement, second:model);
       //! param keep_outliers: if true, the outliers are considered in the optimization 
       //! (but cut by the kernel)
-      bool oneRound(const vector<Correspondence>& correspondences, bool keep_outliers);
+      bool oneRound(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers);
 
 };
 

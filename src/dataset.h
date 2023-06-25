@@ -46,7 +46,7 @@ class Dataset{
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();        
-        void load_data(Vector3fVector &poses, Vector3fVector &sensor_poses, vector<Vector2fVector> &points, IntPairVector& pose_point_correspondences, vector<vector<int>>& valid_points, size_t from_records, size_t num_records_to_load);
+        void load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vector2fVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load);
 
     
 };

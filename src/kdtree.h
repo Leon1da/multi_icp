@@ -109,25 +109,28 @@ namespace kdt
 
 			/** @brief Searches k-nearest neighbors.
 			*/
-			std::vector<int> knnSearch(const Eigen::Vector2f& query, int k) const
+			void knnSearch(const Eigen::Vector2f& query, int k, vector<pair<double, int>>& out) const
 			{
 				KnnQueue queue(k);
 				knnSearchRecursive(query, root_, queue, k);
-				
-				std::vector<int> indices(queue.size());
-				for (size_t i = 0; i < queue.size(); i++)
-					indices[i] = queue[i].second;
 
-				return indices;
+				for (size_t i = 0; i < queue.size(); i++) out.push_back(queue[i]);
+				
 			}
+
+			// TODO use unbounded priority queue !!!
 
 			/** @brief Searches neighbors within radius.
 			*/
-			std::vector<int> radiusSearch(const Eigen::Vector2f& query, double radius) const
+			void radiusSearch(const Eigen::Vector2f& query, double radius, vector<pair<double, int>>& out) const
 			{
-				std::vector<int> indices;
-				radiusSearchRecursive(query, root_, indices, radius);
-				return indices;
+				// std::vector<int> indices;
+				// radiusSearchRecursive(query, root_, indices, radius);
+				int max_size = 10;
+				KnnQueue queue(max_size);
+				radiusSearchRecursive(query, root_, queue, radius);
+				
+				for (size_t i = 0; i < queue.size(); i++) out.push_back(queue[i]);
 			}
 
 
@@ -241,7 +244,7 @@ namespace kdt
 				// 	dist += (p[i] - q[i]) * (p[i] - q[i]);
 				// return sqrt(dist);
 				Eigen::Vector2f diff = p - q;
-				return sqrt(diff.x() * diff.x() + diff.y() * diff.y());
+				return diff.norm();
 			}
 
 			/** @brief Searches the nearest neighbor recursively.
@@ -292,7 +295,10 @@ namespace kdt
 
 			/** @brief Searches neighbors within radius.
 			*/
-			void radiusSearchRecursive(const Eigen::Vector2f& query, const Node* node, std::vector<int>& indices, double radius) const
+
+		
+			// void radiusSearchRecursive(const Eigen::Vector2f& query, const Node* node, std::vector<int>& indices, double radius) const
+			void radiusSearchRecursive(const Eigen::Vector2f& query, const Node* node, KnnQueue& queue, double radius) const
 			{
 				if (node == nullptr)
 					return;
@@ -301,15 +307,15 @@ namespace kdt
 
 				const double dist = distance(query, train);
 				if (dist < radius)
-					indices.push_back(node->idx);
+					queue.push(std::make_pair(dist, node->idx));
 
 				const int axis = node->axis;
 				const int dir = query[axis] < train[axis] ? 0 : 1;
-				radiusSearchRecursive(query, node->next[dir], indices, radius);
+				radiusSearchRecursive(query, node->next[dir], queue, radius);
 
 				const double diff = fabs(query[axis] - train[axis]);
 				if (diff < radius)
-					radiusSearchRecursive(query, node->next[!dir], indices, radius);
+					radiusSearchRecursive(query, node->next[!dir], queue, radius);
 			}
 
 			Node* root_;                 //!< root node
@@ -323,8 +329,9 @@ namespace kdt
 
 		private:
 		
-			IntPairVector* _pose_point_correspondences;
-			vector<Vector2fVector>* _points;
+
+			vector<vector<MapPoint>>* _map;
+			Vector2fVector* _points;
 			Vector3fVector* _poses;
 			
 			vector<kdt::KDTree> _kdtrees;
@@ -336,21 +343,31 @@ namespace kdt
 
 			~CorrespondenceFinder(){};
 
-			void init(Vector3fVector &poses, vector<Vector2fVector> &points, IntPairVector &pose_point_correspondences){
+			void init(Vector3fVector &poses, Vector2fVector &points, vector<vector<MapPoint>> &map){
 
 				cout << "building kdtrees.." << endl;
-				_pose_point_correspondences = &pose_point_correspondences;
+				
+				_map = &map;
 				_points = &points;
 				_poses = &poses;
 				
-				size_t num_poses = poses.size();
-				_kdtrees.resize(num_poses);
+				_kdtrees.resize(map.size());
 
-				for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+				for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
 				{
-					_kdtrees[pose_index].build(points[pose_index]);
-					cout << '\r' << "tree " << pose_index + 1 << "/" << num_poses << " built." << flush;
+					Vector2fVector tree_points;
+					for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+					{
+						MapPoint map_point = map[pose_index][point_index];
+						tree_points.push_back(points[map_point.point_index()]);
+						
+					}
+
+					_kdtrees[pose_index].build(tree_points);
+					cout << '\r' << "tree " << pose_index + 1 << "/" << map.size() << " built." << flush;
 			
+
+					
 				}
 				
 				cout << endl << "building kdtrees complete." << endl;
@@ -362,61 +379,143 @@ namespace kdt
 			/// @param pose_point_pair 
 			/// @param num_neighbors 
 			/// @param neighbors 
-			bool find_local_neighbors(IntPair& pose_point_pair, int num_neighbors, IntPairVector& neighbors){
-				int pose_index = pose_point_pair.first;
-				int point_index = pose_point_pair.second;
-
-				Vector2f query_point((*_points)[pose_index][point_index]);
-
-				vector<int> indices = _kdtrees[pose_index].knnSearch(query_point, num_neighbors); // one occurence will be the point itself
+			bool find_local_neighbors(int pose_index, int point_index, int num_neighbors, IntPairVector& neighbors){
 				
-				for (auto id : indices) neighbors.push_back(IntPair(pose_index, id));
+				Vector2f query_point((*_points)[point_index]);
 
+				vector<pair<double, int>> indices; 
+				_kdtrees[pose_index].knnSearch(query_point, num_neighbors, indices); // one occurence will be the point itself
+				
+				for (size_t knn_index = 0; knn_index < indices.size(); knn_index++)
+				{
+					if (knn_index==0) continue; // the first correspondence is the point itself
+					MapPoint map_point = (*_map)[pose_index][indices[knn_index].second];
+					neighbors.push_back(IntPair(map_point.pose_index(), map_point.point_index()));
+				}
+				
 				return true;
 					
+			}
+
+			/// @brief find the point correspondences in the current pose (local to the tree)
+			/// @param pose_point_pair 
+			/// @param radius 
+			/// @param neighbors 
+			bool find_local_neighbors(int pose_index, int point_index, double radius, IntPairVector& neighbors){
+				
+				Vector2f query_point((*_points)[point_index]);
+
+				vector<pair<double, int>> indices;
+				_kdtrees[pose_index].radiusSearch(query_point, radius, indices); // one occurence will be the point itself
+				
+				for (size_t knn_index = 0; knn_index < indices.size(); knn_index++)
+				{
+					if (knn_index==0) continue; // the first correspondence is the point itself
+					MapPoint map_point = (*_map)[pose_index][indices[knn_index].second];
+					neighbors.push_back(IntPair(map_point.pose_index(), map_point.point_index()));
+				}
+				
+				return true;
+	
 			}
 
 			/// @brief find the point correspondences in all the poses apart the current
 			/// @param pose_point_pair 
 			/// @param neighbor
-			bool find_global_neighbor(IntPair& pose_point_pair, IntPair& neighbor){
-				
-				size_t pose_index = pose_point_pair.first;
-				size_t point_index = pose_point_pair.second;
-
+			bool find_global_neighbor(int pose_index, int point_index, double radius, IntPair& neighbor, size_t window_size=3){
+			
 				Eigen::Isometry2f query_point_pose = v2t((*_poses)[pose_index]);
-				Eigen::Vector2f query_point = (*_points)[pose_index][point_index];
+				Eigen::Vector2f query_point = (*_points)[point_index];
 
-				size_t window_size = 20;
 				size_t mid_win_size = window_size / 2;
 
-				// float min_distance = MAXFLOAT;
-				float threshold = 0.1;
-				float min_distance = threshold;
-				for (size_t wind_index = 0; wind_index < mid_win_size * 2; wind_index++)
+				float min_distance = radius;
+				for (size_t wind_index = 0; wind_index <= mid_win_size * 2; wind_index++)
 				{
 					size_t tree_index = pose_index - mid_win_size + wind_index;
-					if (tree_index != pose_index && tree_index >= 0 && tree_index < _poses->size())
+					if (tree_index != size_t (pose_index) && tree_index >= 0 && tree_index < _poses->size())
 					{	
+						// cout << "pose_index: " << pose_index << " point_index: " << point_index << " tree_index: " << tree_index << " mid_win_size: " << mid_win_size << " window_size: " << window_size << endl;
 						Eigen::Isometry2f tree_pose = v2t((*_poses)[tree_index]);
 						Eigen::Vector2f query_point_in_tree_pose = tree_pose.inverse() * query_point_pose * query_point;
-						vector<int> found_indices = _kdtrees[tree_index].knnSearch(query_point_in_tree_pose, 1);
-						float dist = ((*_points)[tree_index][found_indices[0]] - query_point_in_tree_pose).norm();
-						if (min_distance > dist){
-							neighbor = IntPair(tree_index, found_indices[0]);
-							min_distance = dist;
-						}
+						vector<pair<double, int>> found_indices;
+						_kdtrees[tree_index].radiusSearch(query_point_in_tree_pose, radius, found_indices);
+						
+						// // neighbors in structures coordinates
+						// if (found_indices.size()){ // at least a neighbor was found
+						// 	MapPoint map_point = (*_map)[tree_index][found_indices[0].second];
+						// 	if (found_indices[0].first < min_distance){
+						// 		neighbor = IntPair(map_point.pose_index(), map_point.point_index());
+						// 		min_distance = found_indices[0].first;
+						// 	}
+						
+						// }	
+
+						// neighbors in map coordinates
+						if (found_indices.size()){ // at least a neighbor was found
+							MapPoint map_point = (*_map)[tree_index][found_indices[0].second];
+							if (found_indices[0].first < min_distance){
+								neighbor = IntPair(tree_index, found_indices[0].second);
+								min_distance = found_indices[0].first;
+							}
+						
+						}					
 					}
-					
-					
 				}
 				
-
-				if (min_distance != threshold) return true;
+				if (min_distance < radius) return true; // at least one correspondence was found
 				else return false;
-				
-				
 					
+			}
+			
+
+			/// @brief find the point correspondences in all the poses apart the current
+			/// @param pose_point_pair 
+			/// @param neighbor
+			bool find_global_neighbor(int pose_index, int point_index, IntPair& neighbor, size_t window_size = 3){
+				
+				Eigen::Isometry2f query_point_pose = v2t((*_poses)[pose_index]);
+				Eigen::Vector2f query_point = (*_points)[point_index];
+
+				size_t mid_win_size = window_size / 2;
+
+				float min_distance = MAXFLOAT;
+				for (size_t wind_index = 0; wind_index <= mid_win_size * 2; wind_index++)
+				{
+					size_t tree_index = pose_index - mid_win_size + wind_index;
+					if (tree_index != size_t (pose_index) && tree_index >= 0 && tree_index < _poses->size())
+					{	
+						// cout << "pose_index: " << pose_index << " point_index: " << point_index<< " tree_index: " << tree_index << endl;
+						Eigen::Isometry2f tree_pose = v2t((*_poses)[tree_index]);
+						Eigen::Vector2f query_point_in_tree_pose = tree_pose.inverse() * query_point_pose * query_point;
+						vector<pair<double, int>> found_indices;
+						_kdtrees[tree_index].knnSearch(query_point_in_tree_pose, 1, found_indices);
+						
+						// // neighbors in structures coordinates (_poses indices and _points indices)
+						// if (found_indices.size()){ // at least a neighbor was found
+						// 	MapPoint map_point = (*_map)[tree_index][found_indices[0].second];
+						// 	if (found_indices[0].first < min_distance){
+						// 		neighbor = IntPair(map_point.pose_index(), map_point.point_index());
+						// 		min_distance = found_indices[0].first;
+						// 	}
+						
+						// }	
+
+						// neighbors in map coordinates (_map indices [col_index, row_index])
+						if (found_indices.size()){ // at least a neighbor was found
+							MapPoint map_point = (*_map)[tree_index][found_indices[0].second];
+							if (found_indices[0].first < min_distance){
+								neighbor = IntPair(tree_index, found_indices[0].second);
+								min_distance = found_indices[0].first;
+							}
+						
+						} 
+					}
+				}
+				
+				if (min_distance < MAXFLOAT) return true; // at least one correspondence was found
+				else return false;
+								
 			}
 			
 		};

@@ -17,7 +17,6 @@
 using namespace std;
 using namespace cv;
 
-
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;
 typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > Vector2fVector;
 typedef std::vector<Eigen::Isometry2f, Eigen::aligned_allocator<Eigen::Isometry2f> > Isometry2fVector;
@@ -46,9 +45,31 @@ typedef std::pair<int,int> IntPair;
 
 typedef std::vector<IntPair> IntPairVector;
 
-typedef std::pair<IntPair, IntPair> Correspondence;
+// typedef std::pair<IntPair, IntPair> Correspondence;
 
+class Correspondence{
+    public:
+        int _src_pose;
+        int _src_point;
+        int _dst_pose;
+        int _dst_point;
 
+        Correspondence(){};
+
+        Correspondence(int src_pose, int src_point, int dst_pose, int dst_point){
+            _src_pose = src_pose;
+            _src_point = src_point;
+            _dst_pose = dst_pose;
+            _dst_point = dst_point;
+        };
+
+        Correspondence(IntPair src, IntPair dst){
+            _src_pose = src.first;
+            _src_point = src.second;
+            _dst_pose = dst.first;
+            _dst_point =dst.second;
+        };
+};
 
 inline Eigen::Isometry3f v2t(const Vector6f& t){
     Eigen::Isometry3f T;
@@ -145,4 +166,91 @@ inline Eigen::Matrix3f skew(const Eigen::Vector3f& v){
         -v[1], v[0], 0;
     return S;
 }
+
+
+
+
+    
+class MapPoint{
+    private:
+
+        
+        int _pose_index;            // pose index inside the Vector3fVector poses 
+        int _point_index;           // point index inside the Vector2fVector points.
+        int _normal_index;          // normal index inside the Vector2fVecto normals.
+
+        int _local_correspondences_index;
+        int _global_correspondences_index;
+    
+        size_t _num_local_correspondences;
+        size_t _num_global_correspondences;
+
+
+    public:
+        
+        MapPoint(){
+            _pose_index = -1;
+            _point_index = -1;
+            _normal_index = -1;
+
+            _local_correspondences_index = -1;
+            _global_correspondences_index = -1;
+            _num_local_correspondences = 0;
+            _num_global_correspondences = 0;
+        };
+
+        ~MapPoint(){};
+        
+        void set_pose_index(int pose_index){
+            _pose_index = pose_index;
+        }
+
+        void set_point_index(int point_index){
+            _point_index = point_index;
+
+        }
+
+        void set_normal_index(int normal_index){
+            _normal_index = normal_index;
+        }
+
+
+        void set_local_correspondences_index(int local_correspondences_index, int num_local_correspondences){
+            _local_correspondences_index = local_correspondences_index;
+            _num_local_correspondences = num_local_correspondences;
+        }
+        
+        void set_global_correspondences_index(int global_correspondences_index, int num_global_correspondences){
+            _global_correspondences_index = global_correspondences_index;
+            _num_global_correspondences = num_global_correspondences;
+        }
+
+        
+        void clear_global_correspondeces(){
+            _global_correspondences_index = -1;
+            _num_global_correspondences = 0;
+        }
+        
+        // getter
+        int& pose_index() {return _pose_index;} 
+        int& point_index() {return _point_index;} 
+        int& normal_index() {return _normal_index;} 
+        
+        int& local_correspondences_index() {return _local_correspondences_index;} 
+        int& global_correspondences_index() {return _global_correspondences_index;} 
+
+        
+        bool has_normal()
+        { 
+            if(_normal_index != -1) return true;
+            else return false;
+        }
+
+        int num_local_correspondences(){ return _num_local_correspondences;}
+
+        int num_global_correspondences(){ return _num_global_correspondences;}
+        
+
+};
+
 

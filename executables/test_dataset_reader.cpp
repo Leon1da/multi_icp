@@ -9,36 +9,39 @@
 int main (int argc, char** argv) {
     
   
-    cout << "Multi Iterative Closest Points (IPC)." << endl << endl;
+    cout << "Dataset Reader." << endl << endl;
     
     std::string dataset_filename = "/home/leonardo/multi_icp/dataset/dataset_test.txt";
 
     Dataset dataset(dataset_filename);
 
-    IntPairVector pose_point_correspondences;
-    vector<Vector2fVector> points;
-    vector<vector<int>> valid_points;
+    vector<vector<MapPoint>> map;
+
+    Vector2fVector points;
     Vector3fVector poses;
     Vector3fVector sensor_poses;
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, pose_point_correspondences, valid_points, 0, 10);
+    dataset.load_data(poses, sensor_poses, points, map, 0, 20);
 
-    for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
+
+    // for(auto pose : poses) cout << pose << endl << endl;
+    // for(auto point : points) cout << point << endl << endl;
+
+    size_t num_poses = poses.size();
+    size_t num_points = points.size();
+
+    cout << num_poses << " poses have been loaded." << endl;
+    cout << num_points << " points have been loaded." << endl;
+
+    
+    // apply sensor offset to pose (it is a semplification not strictly needed).
+    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
     {
         poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));
     }
     
-    cout << poses.size() << " poses have been loaded." << endl;
-
-    size_t num_points = 0;
-    for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
-      for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
-        if (valid_points[pose_index][point_index]) num_points++;
-
-    cout << num_points << " valid points have been loaded." << endl;
-
 
     cout << "Loading data complete." << endl << endl;
     
@@ -63,26 +66,22 @@ int main (int argc, char** argv) {
     while (key!=ESC_key) {
 
         drawer.clear();
-        
-        
-        for (size_t pose_index = 0; pose_index < points.size(); pose_index++)
+
+        for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
-          // draw pose
-          drawer.drawPose(poses[pose_index], drawer_controller, red);
+          Vector3f world_pose = poses[pose_index];
+          drawer.drawPose(world_pose, drawer_controller, red);
+
+          for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+          {
+            MapPoint map_point = map[pose_index][point_index];
+            Vector2f world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+            drawer.drawPoint(world_point, drawer_controller, black);
           
-          // draw point
-          for (size_t point_index = 0; point_index < points[pose_index].size(); point_index++)
-          { 
-            if (valid_points[pose_index][point_index]) {
-              Vector2f point_world = points[pose_index][point_index];
-              point_world = v2t(poses[pose_index]) * point_world;
-              drawer.drawPoint(point_world, drawer_controller, black); 
-            
-            }
           }
           
         }
-
+        
 
         
         drawer.show();

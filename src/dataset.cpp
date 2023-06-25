@@ -100,7 +100,7 @@ class Dataset
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();
-        void load_data(Vector3fVector &poses, Vector3fVector &sensor_poses, vector<Vector2fVector> &points, IntPairVector& pose_point_correspondences, vector<vector<int>>& valid_points, size_t from_records, size_t num_records_to_load);
+        void load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vector2fVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load);
 
 
 };
@@ -182,7 +182,7 @@ DatasetRecord Dataset::decode_line(string line){
     return record;
 }
 
-void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, vector<Vector2fVector>& points, IntPairVector& pose_point_correspondences, vector<vector<int>>& valid_points, size_t from_records, size_t num_records_to_load){
+void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vector2fVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load){
 
     
     size_t num_poses = num_records();
@@ -209,21 +209,20 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, vec
     cout << "from_records: " << from_records << " num_records_to_load: " << num_records_to_load << endl;
     cout << "num_records: " << num_poses << endl;
    
-    Eigen::Vector3f pose;
-    Eigen::Vector3f sensor_pose;
-    Eigen::Vector2f point;
-    IntPair pose_point_correspondence;
-
+   int total_points = 0;
+    
     for (size_t pose_index = 0; pose_index < num_records_to_load; pose_index++)
     {
         // read record
         DatasetRecord record = records()[from_records + pose_index];
         
         // read and save pose
+        Eigen::Vector3f pose;
         pose << record.pose()[0], record.pose()[1], record.pose()[2];
+
+        Eigen::Vector3f sensor_pose;
         sensor_pose << record.offset()[0], record.offset()[1], record.offset()[2];
         
-
         poses.push_back(pose);
         sensor_poses.push_back(sensor_pose);
 
@@ -232,33 +231,35 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, vec
         float angle_max = record.angle_max();
         float angle_total = abs(angle_max - angle_min);
         float angle_offset = angle_total / record.n_beams();
+        size_t total_beams = record.n_beams();
 
-
-        Vector2fVector pose_points;
-        vector<int> pose_valid_points;
+        vector<MapPoint> map_pose;
+        
         float angle = angle_min;
-        for (size_t beam_index = 0; beam_index < record.n_beams(); beam_index++)
+        for (size_t beam_index = 0; beam_index < total_beams; beam_index++)
         {   
             float value = record.values()[beam_index];
-            if (value > record.range_min() && value < record.range_max()) {
-                pose_valid_points.push_back(1);
-                pose_point_correspondence = IntPair(pose_index, beam_index);
-                pose_point_correspondences.push_back(pose_point_correspondence);
-        
-            }
-            else { // else: out of range (sensor reading is too far or too close)
-                pose_valid_points.push_back(0);
-            }
-                
+
+            Eigen::Vector2f point;
             point << value * cos(angle), value * sin(angle);
-            pose_points.push_back(point);
             
+            if (value > record.range_min() && value < record.range_max()) {
+                points.push_back(point);
+                
+                MapPoint map_point;
+                map_point.set_pose_index(pose_index);
+                map_point.set_point_index(total_points);
+                map_pose.push_back(map_point);
+
+                total_points++;
+
+            }
+
             angle = angle + angle_offset;
         }
-        
-        valid_points.push_back(pose_valid_points);
-        points.push_back(pose_points);
 
+        map.push_back(map_pose);
+        
         
     }
         

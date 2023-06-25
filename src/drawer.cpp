@@ -91,7 +91,7 @@ void DrawerController::update(int key){
         default: ;
     }
 
-    cout << "\r[u: " << _u << ", v: " << _v << ", scale: " << _scale << "] " << flush;
+    // cout << "\r[u: " << _u << ", v: " << _v << ", scale: " << _scale << "] " << flush;
 }
 
 void DrawerController::update_u(int sign){
