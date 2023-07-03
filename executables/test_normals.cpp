@@ -25,7 +25,7 @@ int main (int argc, char** argv) {
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, 10, 1);
+    dataset.load_data(poses, sensor_poses, points, map, 0, 1);
 
 
     // for(auto pose : poses) cout << pose << endl << endl;
@@ -51,8 +51,24 @@ int main (int argc, char** argv) {
     cout << "Loading correspondence finder." << endl;
 
     kdt::CorrespondenceFinder finder;
-    finder.init(poses, points, map);
+    finder.init(poses, points);
 
+    finder.load_poses_2dtree();
+
+    for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
+    {
+      IntVector points_indices;
+      for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+      {
+        MapPoint map_point = map[pose_index][point_index];
+        points_indices.push_back(map_point.point_index());
+      }
+      
+      // loading kdtree
+      finder.load_points_2dtree(pose_index, points_indices);
+
+    }
+    
     cout << "Loading correspondence finder complete." << endl << endl;
     
     cout << "Finding correspondences." << endl;
@@ -60,30 +76,36 @@ int main (int argc, char** argv) {
     cout << "Finding for local correspondences." << endl;
 
     vector<vector<Correspondence>> local_correspondences;
+
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
       for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
       {
-        MapPoint& map_point = map[pose_index][point_index];       
-        // Finding for local correspondences 
-        IntPairVector local_neighbors;
-        // if (finder.find_local_neighbors(map_point.pose_index(), map_point.point_index(), 10, local_neighbors))
-        if (finder.find_local_neighbors(map_point.pose_index(), map_point.point_index(), 0.05, local_neighbors))
+        MapPoint& map_point = map[pose_index][point_index];
+
+        vector<Correspondence> local_corr;
+
+        vector<pair<double, int>> point_neighbors;
+        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.05, point_neighbors))
         {
-          size_t num_neighbors = local_neighbors.size();
-          if (num_neighbors){
-            vector<Correspondence> cs;
-            for (size_t local_neighbor_index = 0; local_neighbor_index < num_neighbors; local_neighbor_index++)
+          for (size_t i = 0; i < point_neighbors.size(); i++)
+          {
+            int found_index = point_neighbors[i].second;
+            if ( found_index != point_index)
             {
-              cs.push_back(Correspondence(IntPair(map_point.pose_index(), map_point.point_index()), local_neighbors[local_neighbor_index]));
+              local_corr.push_back(Correspondence(pose_index, point_index, pose_index, found_index));
             }
-            local_correspondences.push_back(cs);
-            map_point.set_local_correspondences_index(local_correspondences.size() - 1, num_neighbors);
-          }
-          // cout << "[ " << pose_index << " " << point_index << " ] " << local_neighbors.size() << " local_neighbors found." << endl;
+          } 
         }
+
+        local_correspondences.push_back(local_corr);
+        map_point.set_local_correspondences_index(local_correspondences.size() - 1, local_corr.size());
+      
       }
+      
     }
+    
+
 
     cout << "Finding for local correspondences ok." << endl;
        
