@@ -34,3 +34,21 @@ add_executable(test_multi_icp_solver test_multi_icp_solver.cpp
 )
 
 target_link_libraries(test_multi_icp_solver opencv_highgui)
+
+
+add_executable(test_4dtree test_4dtree.cpp
+    ../src/dataset.cpp
+    ../src/drawer.cpp
+    ../src/utils.cpp
+)
+
+target_link_libraries(test_4dtree opencv_highgui)
+
+add_executable(test_multi_icp_solver_4dtree test_multi_icp_solver_4dtree.cpp
+    ../src/dataset.cpp
+    ../src/drawer.cpp
+    ../src/utils.cpp
+    ../src/multi_icp_solver.cpp
+)
+
+target_link_libraries(test_multi_icp_solver_4dtree opencv_highgui)

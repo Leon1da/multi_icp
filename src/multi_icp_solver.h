@@ -18,9 +18,9 @@
     
     private:
 
-      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const Correspondence& correspondence, const IntPair& normals_pair);
+      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const TriplePair& correspondence);
 
-      void linearize(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers);
+      void linearize(const TriplePairVector& correspondences, bool keep_outliers);
 
               
       Isometry2fVector* _state;                   //< this will hold our state
@@ -50,7 +50,10 @@
       void init(Isometry2fVector& state,
           const Vector3fVector& poses,
           const Vector2fVector& points, 
-          const Vector2fVector& normals);
+          const Vector2fVector& normals,
+          float kernel_threshold=0.05, 
+          float damping=1.0
+          );
     
       inline float kernelThreshold() const {return _kernel_thereshold;}
 
@@ -78,7 +81,7 @@
       //! @param correspondences: the correspondences (first: measurement, second:model);
       //! param keep_outliers: if true, the outliers are considered in the optimization 
       //! (but cut by the kernel)
-      bool oneRound(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers);
+      bool oneRound(const TriplePairVector& correspondences, bool keep_outliers);
 
 };
 

@@ -43,7 +43,7 @@ int main (int argc, char** argv) {
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, 0, 50);
+    dataset.load_data(poses, sensor_poses, points, map, 0, 25);
 
 
     // for(auto pose : poses) cout << pose << endl << endl;
@@ -69,14 +69,11 @@ int main (int argc, char** argv) {
     cout << "Loading correspondence finder." << endl;
 
     kdt::CorrespondenceFinder finder;
-    
+
     finder.init(poses, points);
 
-    cout << "Loading poses 2dtree.." << endl;
-    finder.load_poses_2dtree();
+    finder.load_poses_4dtree();
 
-    
-    cout << "Loading points 2dtree.." << endl;
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
       IntVector points_indices;
@@ -106,7 +103,7 @@ int main (int argc, char** argv) {
         vector<Correspondence> local_corr;
 
         vector<pair<double, int>> point_neighbors;
-        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.05, point_neighbors))
+        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 5, point_neighbors))
         {
           for (size_t i = 0; i < point_neighbors.size(); i++)
           {
@@ -168,7 +165,39 @@ int main (int argc, char** argv) {
     
     cout << "Estimating surface normals complete." << endl;
 
+    cout << "Building 4dtree using points and normals.." << endl;
+
+    finder.set_normals(&normals);
+
+    for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
+    {
+      IntVector points_indices;
+      IntVector normals_indices;
+      for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+      {
+        MapPoint& map_point = map[pose_index][point_index];
+        points_indices.push_back(map_point.point_index());
+        if (map_point.has_normal()) normals_indices.push_back(map_point.normal_index());
+        
+      }
+      
+      if (points_indices.size() == normals_indices.size())
+      {
+        // loading kdtree
+        finder.load_points_4dtree(pose_index, points_indices, normals_indices);
+        for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
+        {
+          MapPoint& map_point = map[pose_index][point_index];
+          map_point.set_points_4dtree_index(pose_index);
+        
+        }
+        
+      }
+
+    }
     
+    cout << "Building 4dtree complete." << endl;
+   
     cout << "Finding for global correspondences." << endl;
     
     vector<Correspondence> global_correspondences;
@@ -176,8 +205,11 @@ int main (int argc, char** argv) {
     {
 
       IntVector pose_neighbors;
-      // bool pose_found = finder.find_pose_neighbors(pose_index, 5, pose_neighbors);
-      bool pose_found = finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors);
+      bool pose_found = finder.find_pose_neighbors(pose_index, 5, pose_neighbors, 4);
+      // bool pose_found = finder.find_pose_neighbors(pose_index, 0.1, pose_neighbors);
+
+      // for (auto pose_ : pose_neighbors) cout << pose_ << " ";
+      // cout << endl;
 
       for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
       {
@@ -185,7 +217,6 @@ int main (int argc, char** argv) {
         MapPoint& map_point = map[pose_index][point_index];
         if (pose_found) 
         {
-
           // double min_distance = std::numeric_limits<double>::max();
           double min_distance = MAXFLOAT;
           IntPair nearest_correspondence;
@@ -194,9 +225,9 @@ int main (int argc, char** argv) {
               int tree_index = pose_neighbors[i];
               if (tree_index != pose_index){
                 pair<double, int> point_neighbor;
-                if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), point_neighbor, 0.1))
+                // if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), point_neighbor, 0.25))
+                if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), map_point.normal_index(), point_neighbor, 0.05))
                 {
-
                   double point_distance = point_neighbor.first;
                   if (point_distance < min_distance)
                   {
@@ -218,7 +249,7 @@ int main (int argc, char** argv) {
         }
         
       }
-      
+
     }
 
     cout << "Finding for global correspondences ok." << endl;
@@ -242,9 +273,7 @@ int main (int argc, char** argv) {
     
     cout << "Init Multi ICP Solver ok." << endl;
 
-
     
-    // will be passed to the optimization round
     TriplePairVector pose_point_normal_correspondences;
     for (size_t i = 0; i < global_correspondences.size(); i++)
     {
@@ -259,7 +288,7 @@ int main (int argc, char** argv) {
       }
       
     }
-
+    
     cout << "#################################################################" << endl;
             
     cout << pose_point_normal_correspondences.size() << " points will be used for otpimization [total points: " << num_points << " ]" << endl;
@@ -327,9 +356,9 @@ int main (int argc, char** argv) {
             }
 
             // update poses tree
-            finder.load_poses_2dtree();
+            finder.load_poses_4dtree();
 
-            // update correspondences
+
             cout << "Finding for new global correspondences." << endl;
             
             global_correspondences.clear();
@@ -338,8 +367,11 @@ int main (int argc, char** argv) {
             {
 
               IntVector pose_neighbors;
-              // bool pose_found = finder.find_pose_neighbors(pose_index, 5, pose_neighbors);
-              bool pose_found = finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors);
+              bool pose_found = finder.find_pose_neighbors(pose_index, 5, pose_neighbors, 4);
+              // bool pose_found = finder.find_pose_neighbors(pose_index, 0.1, pose_neighbors);
+
+              // for (auto pose_ : pose_neighbors) cout << pose_ << " ";
+              // cout << endl;
 
               for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
               {
@@ -347,7 +379,6 @@ int main (int argc, char** argv) {
                 MapPoint& map_point = map[pose_index][point_index];
                 if (pose_found) 
                 {
-
                   // double min_distance = std::numeric_limits<double>::max();
                   double min_distance = MAXFLOAT;
                   IntPair nearest_correspondence;
@@ -356,9 +387,9 @@ int main (int argc, char** argv) {
                       int tree_index = pose_neighbors[i];
                       if (tree_index != pose_index){
                         pair<double, int> point_neighbor;
-                        if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), point_neighbor, 0.1))
+                        // if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), point_neighbor, 0.25))
+                        if (finder.find_point_neighbor(tree_index, map_point.pose_index(), map_point.point_index(), map_point.normal_index(), point_neighbor, 0.05))
                         {
-
                           double point_distance = point_neighbor.first;
                           if (point_distance < min_distance)
                           {
@@ -380,7 +411,7 @@ int main (int argc, char** argv) {
                 }
                 
               }
-              
+
             }
 
             
@@ -405,8 +436,6 @@ int main (int argc, char** argv) {
             cout << pose_point_normal_correspondences.size() << " points will be used for otpimization [total points: " << num_points << " ]" << endl;
 
             
-            
-
         
         }
 

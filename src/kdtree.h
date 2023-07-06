@@ -239,11 +239,23 @@ namespace kdt
 					validateRecursive(node1, depth + 1);
 			}
 
-			static double distance(const Eigen::VectorXf& p, const Eigen::VectorXf& q)
-			{
-				
+			static double distance(const Eigen::VectorXf& p, const Eigen::VectorXf& q, int dim)
+			{	
 				Eigen::Vector2f diff = p - q;
 				return diff.norm();
+				
+				if (dim == 2) {
+					Eigen::Vector2f diff = p - q;
+					return diff.norm();
+				} else if (dim == 4) {
+					Eigen::Vector4f diff = p - q;
+					return diff.norm();
+					// Eigen::Vector2f pos = diff.block(0, 0, 2, 1);
+					// Eigen::Vector2f dir = diff.block(2, 0, 2, 1);
+					// return 0.5 * (pos.norm() + dir.norm());
+				} else {
+					return 0;
+				}
 			}
 
 			/** @brief Searches the nearest neighbor recursively.
@@ -253,9 +265,9 @@ namespace kdt
 				if (node == nullptr)
 					return;
 
-				const Eigen::Vector2f& train = points_[node->idx];
+				const Eigen::VectorXf& train = points_[node->idx];
 
-				const double dist = distance(query, train);
+				const double dist = distance(query, train, dim_);
 				
 				if (dist < out.first)
 				{
@@ -277,9 +289,9 @@ namespace kdt
 				if (node == nullptr)
 					return;
 
-				const Eigen::Vector2f& train = points_[node->idx];
+				const Eigen::VectorXf& train = points_[node->idx];
 
-				const double dist = distance(query, train);
+				const double dist = distance(query, train, dim_);
 				if (dist < *minDist)
 				{
 					*minDist = dist;
@@ -304,7 +316,7 @@ namespace kdt
 
 				const Eigen::VectorXf& train = points_[node->idx];
 
-				const double dist = distance(query, train);
+				const double dist = distance(query, train, dim_);
 				queue.push(std::make_pair(dist, node->idx));
 
 				const int axis = node->axis;
@@ -328,7 +340,7 @@ namespace kdt
 
 				const Eigen::VectorXf& train = points_[node->idx];
 
-				const double dist = distance(query, train);
+				const double dist = distance(query, train, dim_);
 				if (dist < radius)
 					queue.push(std::make_pair(dist, node->idx));
 
@@ -354,8 +366,8 @@ namespace kdt
 		private:
 		
 
-			vector<vector<MapPoint>>* _map;
 			Vector2fVector* _points;
+			Vector2fVector* _normals;
 			Vector3fVector* _poses;
 			
 			vector<kdt::KDTree> _points_2dtrees;
@@ -386,6 +398,24 @@ namespace kdt
 
 			}
 
+			void init(Vector3fVector &poses, Vector2fVector &points, Vector2fVector &normals){
+
+				
+				_points = &points;
+				_normals = &normals;
+				_poses = &poses;
+
+				size_t num_poses = poses.size();
+				
+				_points_2dtrees.resize(num_poses);
+				_points_4dtrees.resize(num_poses);
+
+			}
+
+			void set_normals(Vector2fVector* normals){
+				_normals = normals;
+			}
+
 			void load_points_2dtree(int pose_index, IntVector points_indices){
 				VectorXfVector tree_points;
 				for (size_t i = 0; i < points_indices.size(); i++)
@@ -393,6 +423,20 @@ namespace kdt
 					tree_points.push_back((*_points)[points_indices[i]]);
 				}
 				_points_2dtrees[pose_index].build(tree_points, 2);
+
+			}
+
+			void load_points_4dtree(int pose_index, IntVector points_indices, IntVector normals_indices){
+				assert(points_indices.size() == normals_indices.size());
+				VectorXfVector tree_points;
+				for (size_t i = 0; i < points_indices.size(); i++)
+				{
+					Vector2f point = (*_points)[points_indices[i]];
+					Vector2f normal = (*_normals)[normals_indices[i]];
+					Vector4f tree_point = Vector4f(point.x(), point.y(), normal.x(), normal.y());
+					tree_points.push_back(tree_point);
+				}
+				_points_4dtrees[pose_index].build(tree_points, 4);
 
 			}
 
@@ -405,6 +449,26 @@ namespace kdt
 				Vector2f query_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
 				
 				_points_2dtrees[tree_index].knnSearch(query_point, num_neighbors, neighbors);
+				
+				if (!neighbors.size()) return false;
+			
+				return true;
+			}
+
+			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, int num_neighbors, vector<pair<double, int>>& neighbors){
+				Vector3f pose = (*_poses)[pose_index];
+				Vector3f tree_pose = (*_poses)[tree_index];
+
+				Vector2f point = (*_points)[point_index];
+				Vector2f world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
+				
+				Vector2f normal = (*_normals)[normal_index]; 
+				// Vector2f world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
+				Vector2f world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
+
+				Vector4f query_point = Vector4f(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
+				
+				_points_4dtrees[tree_index].knnSearch(query_point, num_neighbors, neighbors);
 				
 				if (!neighbors.size()) return false;
 			
@@ -426,15 +490,54 @@ namespace kdt
 				return true;
 			}
 
+			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, double radius, vector<pair<double, int>>& neighbors){
+				
+				Vector3f pose = (*_poses)[pose_index];
+				Vector3f tree_pose = (*_poses)[tree_index];
+
+				Vector2f point = (*_points)[point_index];
+				Vector2f world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
+				
+				Vector2f normal = (*_normals)[normal_index];
+				// Vector2f world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
+				Vector2f world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
+
+				Vector4f query_point = Vector4f(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
+				_points_4dtrees[tree_index].radiusSearch(query_point, radius, neighbors);
+				
+				if (!neighbors.size()) return false;
+				
+				return true;
+			}
+
 			bool find_point_neighbor(int tree_index, int pose_index, int point_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT){
 				Vector2f point = (*_points)[point_index];
 				Vector3f pose = (*_poses)[pose_index];
-
 				Vector3f tree_pose = (*_poses)[tree_index];
 
 				Vector2f query_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
 
 				_points_2dtrees[tree_index].nnSearch(query_point, neighbor);
+
+				if (neighbor.first > min_distance || neighbor.second == -1) return false;	
+							
+				return true;
+
+			}
+
+			bool find_point_neighbor(int tree_index, int pose_index, int point_index, int normal_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT){
+				Vector3f pose = (*_poses)[pose_index];
+				Vector3f tree_pose = (*_poses)[tree_index];
+
+				Vector2f point = (*_points)[point_index];
+				Vector2f world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
+				
+				Vector2f normal = (*_normals)[normal_index];
+				// Vector2f world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
+				Vector2f world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
+
+				Vector4f query_point = Vector4f(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
+				_points_4dtrees[tree_index].nnSearch(query_point, neighbor);
 
 				if (neighbor.first > min_distance || neighbor.second == -1) return false;	
 							
@@ -452,12 +555,33 @@ namespace kdt
 				
 			}
 
-			bool find_pose_neighbors(int pose_index, int num_neighbors, IntVector& neighbors){
-				Vector3f query_pose = (*_poses)[pose_index];
+			void load_poses_4dtree(){
+				VectorXfVector tree_poses;
+				for (size_t pose_index = 0; pose_index < _poses->size(); pose_index++)
+				{
+					Vector3f pose = (*_poses)[pose_index];
+					Vector4f tree_pose = Vector4f(pose.x(), pose.y(), cos(pose.z()), sin(pose.z()));
+					tree_poses.push_back(tree_pose);
+				}
+				_poses_4dtrees.build(tree_poses, 4);
 				
+			}
+
+			bool find_pose_neighbors(int pose_index, int num_neighbors, IntVector& neighbors, int tree_dim = 2){
+				Vector3f pose = (*_poses)[pose_index];
 				vector<pair<double, int>> pose_neighbors;
-				_poses_2dtrees.knnSearch(query_pose, num_neighbors, pose_neighbors);
-				
+
+				if (tree_dim == 2)
+				{
+					Vector2f query_pose = Vector2f(pose.x(), pose.y());
+					_poses_2dtrees.knnSearch(query_pose, num_neighbors, pose_neighbors);
+				}
+				else if (tree_dim == 4)
+				{
+					Vector4f query_pose = Vector4f(pose.x(), pose.y(), cos(pose.z()), sin(pose.z()));
+					_poses_4dtrees.knnSearch(query_pose, num_neighbors, pose_neighbors);
+				}
+					
 				if (!pose_neighbors.size()) return false;	
 
 				for (size_t i = 0; i < pose_neighbors.size(); i++)
@@ -469,12 +593,23 @@ namespace kdt
 
 			}
 			
-			bool find_pose_neighbors(int pose_index, double radius, IntVector& neighbors){
-				Vector3f query_pose = (*_poses)[pose_index];
+			bool find_pose_neighbors(int pose_index, double radius, IntVector& neighbors, int tree_dim = 2){
 				
+				Vector3f pose = (*_poses)[pose_index];
 				vector<pair<double, int>> pose_neighbors;
-				_poses_2dtrees.radiusSearch(query_pose, radius, pose_neighbors);
+
+				if (tree_dim == 2)
+				{
+					Vector2f query_pose = Vector2f(pose.x(), pose.y());
+					_poses_2dtrees.radiusSearch(query_pose, radius, pose_neighbors);
+				}
+				else if (tree_dim == 4)
+				{
+					Vector4f query_pose = Vector4f(pose.x(), pose.y(), cos(pose.z()), sin(pose.z()));
+					_poses_4dtrees.radiusSearch(query_pose, radius, pose_neighbors);
+				}
 				
+
 				if (!pose_neighbors.size()) return false;	
 
 				for (size_t i = 0; i < pose_neighbors.size(); i++)
@@ -486,11 +621,20 @@ namespace kdt
 
 			}
 
-			bool find_pose_neighbor(int pose_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT){
-				Vector3f query_pose = (*_poses)[pose_index];
+			bool find_pose_neighbor(int pose_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT, int tree_dim = 2){
+				Vector3f pose = (*_poses)[pose_index];
 				
-				_poses_2dtrees.nnSearch(query_pose, neighbor);
-
+				if (tree_dim == 2)
+				{
+					Vector2f query_pose = Vector2f(pose.x(), pose.y());
+					_poses_2dtrees.nnSearch(query_pose, neighbor);
+				}
+				else if (tree_dim == 4)
+				{
+					Vector4f query_pose = Vector4f(pose.x(), pose.y(), cos(pose.z()), sin(pose.z()));
+					_poses_4dtrees.nnSearch(query_pose, neighbor);
+				}
+				
 				if (neighbor.first > min_distance || neighbor.second == -1) return false;					
 				return true;
 

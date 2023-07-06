@@ -18,9 +18,9 @@ class MultiICPSolver{
       int _num_inliers;
       int _num_outliers;
 
-      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const Correspondence& correspondence, const IntPair& normals_pair);
+      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const TriplePair& correspondence);
 
-      void linearize(const vector<Correspondence>& corresponendeces, const IntPairVector& normals_indices, bool keep_outliers);
+      void linearize(const TriplePairVector& corresponendeces, bool keep_outliers);
 
 
     public:
@@ -36,7 +36,9 @@ class MultiICPSolver{
       void init(Isometry2fVector& state,
           const Vector3fVector& poses,
           const Vector2fVector& points,
-          const Vector2fVector& normals);
+          const Vector2fVector& normals,
+          float kernel_threshold=0.05, 
+          float damping=1.0);
 
       inline float kernelThreshold() const {return _kernel_thereshold;}
 
@@ -63,7 +65,7 @@ class MultiICPSolver{
       //! performs one iteration of optimization
       //! param keep_outliers: if true, the outliers are considered in the optimization 
       //! (but cut by the kernel)
-      bool oneRound(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers);
+      bool oneRound(const TriplePairVector& correspondences, bool keep_outliers);
 
 };
 
@@ -79,14 +81,16 @@ MultiICPSolver::MultiICPSolver(){
   _min_num_inliers=0;
   _num_inliers=0;
   _num_outliers=0;
-  _kernel_thereshold=0.1;
+  _kernel_thereshold=1;
 }
 
-void MultiICPSolver::init(Isometry2fVector& state, const Vector3fVector& poses, const Vector2fVector& points, const Vector2fVector& normals){
+void MultiICPSolver::init(Isometry2fVector& state, const Vector3fVector& poses, const Vector2fVector& points, const Vector2fVector& normals, float kernel_threshold, float damping){
   _state=&state;
   _poses=&poses;
   _points=&points;
   _normals=&normals;
+  _damping = damping;
+  _kernel_thereshold = kernel_threshold;
   
   size_t num_poses = poses.size();
   
@@ -105,16 +109,15 @@ void MultiICPSolver::init(Isometry2fVector& state, const Vector3fVector& poses, 
 bool MultiICPSolver::errorAndJacobian(float& error,
                                   Matrix1_3f& Ji,
                                   Matrix1_3f& Jj,
-                                  const Correspondence& correspondence,
-                                  const IntPair& normals_pair){
+                                  const TriplePair& correspondence){
 
-    int cur_pose_index = correspondence._src_pose;
-    int cur_point_index = correspondence._src_point;
-    int cur_normal_index = normals_pair.first;
+    int cur_pose_index = get<0>(correspondence.first);
+    int cur_point_index = get<1>(correspondence.first);
+    int cur_normal_index = get<2>(correspondence.first);
 
-    int ref_pose_index = correspondence._dst_pose;
-    int ref_point_index = correspondence._dst_point;
-    int ref_normal_index = normals_pair.second;
+    int ref_pose_index = get<0>(correspondence.second);
+    int ref_point_index = get<1>(correspondence.second);
+    int ref_normal_index = get<2>(correspondence.second);
     
 
 
@@ -129,21 +132,23 @@ bool MultiICPSolver::errorAndJacobian(float& error,
     
     Vector2f alpha = (Xi*pki - Xj*pkj);
     Vector2f beta = (Xi.rotation()*nki + Xj.rotation()*nkj);
-    error = alpha.dot(beta);
-
+    
     Eigen::Isometry2f dRi = dRz((*_poses)[cur_pose_index].z());
     Eigen::Isometry2f dRj = dRz((*_poses)[ref_pose_index].z());
 
     // compute the jacobian of the transformation
     Ji = Eigen::Matrix<float, 1, 3>(beta.x(), beta.y(), beta.dot(dRi * pki) + alpha.dot(dRi * nki));
     Jj = Eigen::Matrix<float, 1, 3>(-beta.x(), -beta.y(), -beta.dot(dRj * pkj) + alpha.dot(dRj * nkj));
+
+    error = alpha.dot(beta);
+
     
     return true;
 }
 
 
 
-void MultiICPSolver::linearize(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers){
+void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool keep_outliers){
   
   _H.setZero();
   _b.setZero();
@@ -156,17 +161,16 @@ void MultiICPSolver::linearize(const vector<Correspondence>& correspondences, co
   
   for (size_t index = 0; index < correspondences.size(); index++)
   {
-    Correspondence correspondence = correspondences[index];
-    IntPair normals_pair = normals_indices[index];
-  
-    int cur_pose_index = correspondence._src_pose;
-    int ref_pose_index = correspondence._dst_pose;
+    TriplePair correspondence = correspondences[index];
+    
+    int cur_pose_index = get<0>(correspondence.first);
+    int ref_pose_index = get<0>(correspondence.second);
     
     float e;
     Matrix1_3f J_cur;
     Matrix1_3f J_ref;
 
-    if(!errorAndJacobian(e, J_cur, J_ref, correspondence, normals_pair)) continue;
+    if(!errorAndJacobian(e, J_cur, J_ref, correspondence)) continue;
     
     float chi = e*e;
     float lambda=1;
@@ -198,10 +202,10 @@ void MultiICPSolver::linearize(const vector<Correspondence>& correspondences, co
 
 }
 
-bool MultiICPSolver::oneRound(const vector<Correspondence>& correspondences, const IntPairVector& normals_indices, bool keep_outliers){
+bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep_outliers){
 
   cout << "linearize.." << endl;
-  linearize(correspondences, normals_indices,  keep_outliers);
+  linearize(correspondences,  keep_outliers);
 
   size_t state_size = (*_state).size();
   Eigen::Matrix2f damping = Eigen::Matrix2f(state_size, state_size);

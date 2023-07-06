@@ -23,18 +23,21 @@ typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> >
 typedef std::vector<Eigen::Isometry2f, Eigen::aligned_allocator<Eigen::Isometry2f> > Isometry2fVector;
 
 
-typedef Eigen::Matrix<float, 1, 3> Matrix1_3f;
 
-typedef Eigen::Matrix<float, 3, 3> Matrix3f;
+
+typedef Eigen::Matrix<float, 2, 1> Vector2f;
 typedef Eigen::Matrix<float, 3, 1> Vector3f;
-
-typedef Eigen::Matrix<float, 6, 6> Matrix6f;
+typedef Eigen::Matrix<float, 4, 1> Vector4f;
 typedef Eigen::Matrix<float, 6, 1> Vector6f;
 
 
-typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
 typedef Eigen::Matrix<float, 2, 2> Matrix2f;
-typedef Eigen::Matrix<float, 2, 1> Vector2f;
+typedef Eigen::Matrix<float, 3, 3> Matrix3f;
+typedef Eigen::Matrix<float, 6, 6> Matrix6f;
+
+typedef Eigen::Matrix<float, 1, 3> Matrix1_3f;
+
+typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
 
 
 typedef std::vector<int> IntVector;
@@ -45,6 +48,10 @@ typedef std::pair<int,int> IntPair;
 
 
 typedef std::vector<IntPair> IntPairVector;
+
+typedef std::tuple<int, int, int> IntTriple;
+typedef std::pair<IntTriple, IntTriple> TriplePair;
+typedef std::vector<TriplePair> TriplePairVector;
 
 // typedef std::pair<IntPair, IntPair> Correspondence;
 
@@ -186,6 +193,9 @@ class MapPoint{
         size_t _num_local_correspondences;
         size_t _num_global_correspondences;
 
+        int _points_2dtree_index;
+        int _points_4dtree_index;
+
 
     public:
         
@@ -198,6 +208,9 @@ class MapPoint{
             _global_correspondences_index = -1;
             _num_local_correspondences = 0;
             _num_global_correspondences = 0;
+
+            _points_2dtree_index = -1;
+            _points_4dtree_index = -1;
         };
 
         ~MapPoint(){};
@@ -231,6 +244,15 @@ class MapPoint{
             _global_correspondences_index = -1;
             _num_global_correspondences = 0;
         }
+
+        void set_points_2dtree_index(int points_2dtree_index) {
+            _points_2dtree_index = points_2dtree_index;
+        }
+
+        void set_points_4dtree_index(int points_4dtree_index) {
+            _points_4dtree_index = points_4dtree_index;
+        }
+        
         
         // getter
         int& pose_index() {return _pose_index;} 
@@ -239,7 +261,9 @@ class MapPoint{
         
         int& local_correspondences_index() {return _local_correspondences_index;} 
         int& global_correspondences_index() {return _global_correspondences_index;} 
-
+        
+        int& points_2dtree_index() {return _points_2dtree_index;}
+        int& points_4dtree_index() {return _points_4dtree_index;}
         
         bool has_normal()
         { 
