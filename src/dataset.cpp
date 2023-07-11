@@ -1,37 +1,35 @@
 #include "defs.h"
 
 class DatasetRecord {
+    
     private:
         float _ts;
-        vector<float> _pose;
-        vector<float> _offset;
+        Vector3d _pose;
+        Vector3d _offset;
         float _range_min;
         float _range_max;
         float _angle_min;
         float _angle_max;
         size_t _n_beams;
-        vector<float> _values;
+        Eigen::VectorXd _values;
     
     public:
-        DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, vector<float> values);
+        DatasetRecord(float ts, Vector3d pose, Vector3d offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, Eigen::VectorXd values);
         ~DatasetRecord();
 
         float ts();
-        vector<float> pose();
-        vector<float> offset();
+        Vector3d pose();
+        Vector3d offset();
         float range_min();
         float range_max();
         float angle_min();
         float angle_max();
         size_t n_beams();
-        vector<float> values();
-    
-
-
-        
+        Eigen::VectorXd values();
+            
 };
 
-DatasetRecord::DatasetRecord(float ts, vector<float> pose, vector<float> offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, vector<float> values){
+DatasetRecord::DatasetRecord(float ts, Vector3d pose, Vector3d offset, float range_min, float range_max, float angle_min, float angle_max, size_t n_beams, Eigen::VectorXd values){
         _ts = ts;
         _pose = pose;
         _offset = offset;
@@ -51,11 +49,11 @@ float DatasetRecord::ts(){
     return _ts;
 }
 
-vector<float> DatasetRecord::pose(){
+Vector3d DatasetRecord::pose(){
     return _pose;
 }
 
-vector<float> DatasetRecord::offset(){
+Vector3d DatasetRecord::offset(){
     return _offset;
 }
 
@@ -79,7 +77,7 @@ size_t DatasetRecord::n_beams(){
     return _n_beams;
 }
 
-vector<float> DatasetRecord::values(){
+Eigen::VectorXd DatasetRecord::values(){
     return _values;
 }
 
@@ -100,7 +98,7 @@ class Dataset
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();
-        void load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vector2fVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load);
+        void load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold=DBL_MIN);
 
 
 };
@@ -159,30 +157,48 @@ DatasetRecord Dataset::decode_line(string line){
     double ts = stod(line.substr(pos_ts + 4, pos_pose - pos_ts - 4));
     
     
-    vector<float> pose;
-    std::istringstream pose_string(line.substr(pos_pose + 6, pos_offset - pos_pose - 6));
-    copy(std::istream_iterator<float>(pose_string), std::istream_iterator<float>(), std::back_inserter(pose));
+    // vector<double> pose;
+    // std::istringstream pose_string(line.substr(pos_pose + 6, pos_offset - pos_pose - 6));
+    // copy(std::istream_iterator<double>(pose_string), std::istream_iterator<double>(), std::back_inserter(pose));
     
-    vector<float> offset;
-    std::istringstream offset_string(line.substr(pos_offset + 8, pos_range_min - pos_offset - 8));
-    copy(std::istream_iterator<float>(offset_string), std::istream_iterator<float>(), std::back_inserter(offset));
+    // vector<double> offset;
+    // std::istringstream offset_string(line.substr(pos_offset + 8, pos_range_min - pos_offset - 8));
+    // copy(std::istream_iterator<double>(offset_string), std::istream_iterator<double>(), std::back_inserter(offset));
 
+    vector<double> pose_vector;
+    std::istringstream pose_string(line.substr(pos_pose + 6, pos_offset - pos_pose - 6));
+    copy(std::istream_iterator<double>(pose_string), std::istream_iterator<double>(), std::back_inserter(pose_vector));
+    Vector3d pose = Vector3d(pose_vector[0], pose_vector[1], pose_vector[2]);
+    
+    vector<double> offset_vector;
+    std::istringstream offset_string(line.substr(pos_offset + 8, pos_range_min - pos_offset - 8));
+    copy(std::istream_iterator<double>(offset_string), std::istream_iterator<double>(), std::back_inserter(offset_vector));
+    Vector3d offset = Vector3d(offset_vector[0], offset_vector[1], offset_vector[2]);
+    
 
     float range_min = stof(line.substr(pos_range_min + 11, pos_range_max - pos_range_min - 11));
     float range_max = stof(line.substr(pos_range_max + 11, pos_angle_min - pos_range_max - 11));
     float angle_min = stof(line.substr(pos_angle_min + 11, pos_angle_max - pos_angle_min - 11));
     float angle_max = stof(line.substr(pos_angle_max + 11, pos_n_beams - pos_angle_max - 11));
-    int n_beams = stoi(line.substr(pos_n_beams + 9, pos_values - pos_n_beams - 9));
+    size_t n_beams = stoi(line.substr(pos_n_beams + 9, pos_values - pos_n_beams - 9));
     
-    vector<float> values;
+    // vector<double> values;
+    // std::istringstream values_string(line.substr(pos_values + 8));
+    // copy(std::istream_iterator<double>(values_string), std::istream_iterator<double>(), std::back_inserter(values));
+    
+    vector<double> values_vector;
     std::istringstream values_string(line.substr(pos_values + 8));
-    copy(std::istream_iterator<float>(values_string), std::istream_iterator<float>(), std::back_inserter(values));
+    copy(std::istream_iterator<double>(values_string), std::istream_iterator<double>(), std::back_inserter(values_vector));
+    
+    Eigen::VectorXd values(n_beams);
+    for (size_t value_index = 0; value_index < n_beams; value_index++) values[value_index] = values_vector[value_index];
+    
 
     DatasetRecord record(ts, pose, offset, range_min, range_max, angle_min, angle_max, n_beams, values);
     return record;
 }
 
-void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vector2fVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load){
+void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold){
 
     
     size_t num_poses = num_records();
@@ -209,7 +225,12 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vec
     cout << "from_records: " << from_records << " num_records_to_load: " << num_records_to_load << endl;
     cout << "num_records: " << num_poses << endl;
    
-   int total_points = 0;
+    
+    int total_points = 0;
+    int total_poses = 0;
+    
+    Eigen::Vector3d ref_pose = records()[from_records].pose();
+    double ref_distance = DBL_MAX;
     
     for (size_t pose_index = 0; pose_index < num_records_to_load; pose_index++)
     {
@@ -217,11 +238,19 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vec
         DatasetRecord record = records()[from_records + pose_index];
         
         // read and save pose
-        Eigen::Vector3f pose;
-        pose << record.pose()[0], record.pose()[1], record.pose()[2];
+        Eigen::Vector3d pose = record.pose();
+        
+        // drop poses that are too near the last added one!
+        Eigen::Vector2d diff = Eigen::Vector2d((ref_pose - pose).block(0, 0, 2, 1));
+        ref_distance += diff.norm();
+        if (ref_distance < min_pose_distance_threshold) continue;
 
-        Eigen::Vector3f sensor_pose;
-        sensor_pose << record.offset()[0], record.offset()[1], record.offset()[2];
+        ref_pose = pose;
+        ref_distance = 0;
+
+        cout << "Loading pose # [ " <<  pose_index << "] " << pose.transpose() << endl;
+        
+        Eigen::Vector3d sensor_pose = record.offset();
         
         poses.push_back(pose);
         sensor_poses.push_back(sensor_pose);
@@ -233,21 +262,24 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vec
         float angle_offset = angle_total / record.n_beams();
         size_t total_beams = record.n_beams();
 
+        Eigen::VectorXd values = record.values();
+
         vector<MapPoint> map_pose;
         
         float angle = angle_min;
         for (size_t beam_index = 0; beam_index < total_beams; beam_index++)
         {   
-            float value = record.values()[beam_index];
+            float value = values[beam_index];
+            // float value = record.values()[beam_index];
 
-            Eigen::Vector2f point;
+            Vector2d point;
             point << value * cos(angle), value * sin(angle);
             
             if (value > record.range_min() && value < record.range_max()) {
                 points.push_back(point);
                 
                 MapPoint map_point;
-                map_point.set_pose_index(pose_index);
+                map_point.set_pose_index(total_poses);
                 map_point.set_point_index(total_points);
                 map_pose.push_back(map_point);
 
@@ -257,7 +289,9 @@ void Dataset::load_data(Vector3fVector& poses, Vector3fVector& sensor_poses, Vec
 
             angle = angle + angle_offset;
         }
-
+        
+        
+        total_poses++;
         map.push_back(map_pose);
         
         

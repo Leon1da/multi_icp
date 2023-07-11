@@ -18,9 +18,9 @@ int main (int argc, char** argv) {
 
     vector<vector<MapPoint>> map;
 
-    Vector2fVector points;
-    Vector3fVector poses;
-    Vector3fVector sensor_poses;
+    Vector2dVector points;
+    Vector3dVector poses;
+    Vector3dVector sensor_poses;
     
 
     cout << "Loading data.." << endl;
@@ -152,7 +152,7 @@ int main (int argc, char** argv) {
         
         for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
-          Vector3f world_pose = poses[pose_index];
+          Vector3d world_pose = poses[pose_index];
           drawer.drawPose(world_pose, drawer_controller, red);
 
           for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -160,7 +160,7 @@ int main (int argc, char** argv) {
 
             MapPoint map_point = map[pose_index][point_index];
 
-            Vector2f world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+            Vector2d world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
             
             drawer.drawPoint(world_point, drawer_controller, black);
 
@@ -173,8 +173,8 @@ int main (int argc, char** argv) {
         {
           Correspondence c = global_correspondences[correspondence_index];
           // cout << "[ " << c._src_pose << " " << c._src_point << " ] [ " << c._dst_pose << " " << c._dst_point << " ]" << endl;
-          Vector2f start_point = v2t(poses[map[c._src_pose][c._src_point].pose_index()]) * points[map[c._src_pose][c._src_point].point_index()];
-          Vector2f end_point = v2t(poses[map[c._dst_pose][c._dst_point].pose_index()]) * points[map[c._dst_pose][c._dst_point].point_index()];
+          Vector2d start_point = v2t(poses[map[c._src_pose][c._src_point].pose_index()]) * points[map[c._src_pose][c._src_point].point_index()];
+          Vector2d end_point = v2t(poses[map[c._dst_pose][c._dst_point].pose_index()]) * points[map[c._dst_pose][c._dst_point].point_index()];
           drawer.drawLine(start_point, end_point, drawer_controller, green);
 
         }

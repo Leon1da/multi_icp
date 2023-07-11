@@ -18,22 +18,22 @@
     
     private:
 
-      bool errorAndJacobian(float& error, Matrix1_3f& Ji, Matrix1_3f& Jj, const TriplePair& correspondence);
+      bool errorAndJacobian(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
 
       void linearize(const TriplePairVector& correspondences, bool keep_outliers);
 
               
       Isometry2fVector* _state;                   //< this will hold our state
-      float _kernel_thereshold;                   //< threshold for the kernel
-      float _damping;                             //< damping, to slow the solution
+      double _kernel_thereshold;                   //< threshold for the kernel
+      double _damping;                             //< damping, to slow the solution
       int _min_num_inliers;                       //< if less inliers than this value, the solver stops
-      const Vector3fVector* _poses;
-      const Vector2fVector* _points;      
-      const Vector2fVector* _normals;      
+      const Vector3dVector* _poses;
+      const Vector2dVector* _points;      
+      const Vector2dVector* _normals;      
       Eigen::MatrixXf _H;
       Eigen::VectorXf _b;
-      float _chi_inliers;
-      float _chi_outliers;
+      double _chi_inliers;
+      double _chi_outliers;
       int _num_inliers;
       int _num_outliers;
 
@@ -48,9 +48,9 @@
       //! @param poses: the poses of the world
       //! @param points: the points of the world
       void init(Isometry2fVector& state,
-          const Vector3fVector& poses,
-          const Vector2fVector& points, 
-          const Vector2fVector& normals,
+          const Vector3dVector& poses,
+          const Vector2dVector& points, 
+          const Vector2dVector& normals,
           float kernel_threshold=0.05, 
           float damping=1.0
           );
@@ -66,10 +66,10 @@
       Isometry2fVector* state() {return _state;}
 
       //! chi square of the "good" points
-      const float chiInliers() const {return _chi_inliers;}
+      const double chiInliers() const {return _chi_inliers;}
       
       //! chi square of the "bad" points
-      const float chiOutliers() const {return _chi_outliers;}
+      const double chiOutliers() const {return _chi_outliers;}
       
       //! number of inliers (an inlier is a point whose error is below kernel threshold)
       const int numInliers() const {return _num_inliers;}

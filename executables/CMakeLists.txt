@@ -9,46 +9,74 @@ add_executable(test_dataset_reader test_dataset_reader.cpp
 target_link_libraries(test_dataset_reader opencv_highgui)
 
 
-add_executable(test_correspondences test_correspondences.cpp
-    ../src/dataset.cpp
-    ../src/drawer.cpp
-    ../src/utils.cpp
-)
+# add_executable(test_points_correspondences test_points_correspondences.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+# )
 
-target_link_libraries(test_correspondences opencv_highgui)
+# target_link_libraries(test_points_correspondences opencv_highgui)
+
+# add_executable(test_poses_correspondences test_poses_correspondences.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+# )
+
+# target_link_libraries(test_poses_correspondences opencv_highgui)
 
 
-add_executable(test_normals test_normals.cpp
-    ../src/dataset.cpp
-    ../src/drawer.cpp
-    ../src/utils.cpp
-)
+# add_executable(test_normals test_normals.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+# )
 
-target_link_libraries(test_normals opencv_highgui)
+# target_link_libraries(test_normals opencv_highgui)
 
-add_executable(test_multi_icp_solver test_multi_icp_solver.cpp
+# add_executable(test_multi_icp_solver_v2 test_multi_icp_solver_v2.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+#     ../src/multi_icp_solver.cpp
+# )
+
+# target_link_libraries(test_multi_icp_solver_v2 opencv_highgui)
+
+
+add_executable(test_multi_icp_solver_complete test_multi_icp_solver_complete.cpp
     ../src/dataset.cpp
     ../src/drawer.cpp
     ../src/utils.cpp
     ../src/multi_icp_solver.cpp
 )
 
-target_link_libraries(test_multi_icp_solver opencv_highgui)
+target_link_libraries(test_multi_icp_solver_complete opencv_highgui)
+
+# add_executable(test_multi_icp_solver test_multi_icp_solver.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+#     ../src/multi_icp_solver.cpp
+# )
+
+# target_link_libraries(test_multi_icp_solver opencv_highgui)
 
 
-add_executable(test_4dtree test_4dtree.cpp
-    ../src/dataset.cpp
-    ../src/drawer.cpp
-    ../src/utils.cpp
-)
 
-target_link_libraries(test_4dtree opencv_highgui)
+# add_executable(test_4dtree test_4dtree.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+# )
 
-add_executable(test_multi_icp_solver_4dtree test_multi_icp_solver_4dtree.cpp
-    ../src/dataset.cpp
-    ../src/drawer.cpp
-    ../src/utils.cpp
-    ../src/multi_icp_solver.cpp
-)
+# target_link_libraries(test_4dtree opencv_highgui)
 
-target_link_libraries(test_multi_icp_solver_4dtree opencv_highgui)
+# add_executable(test_multi_icp_solver_4dtree test_multi_icp_solver_4dtree.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+#     ../src/utils.cpp
+#     ../src/multi_icp_solver.cpp
+# )
+
+# target_link_libraries(test_multi_icp_solver_4dtree opencv_highgui)

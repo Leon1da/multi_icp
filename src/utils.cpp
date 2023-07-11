@@ -2,12 +2,12 @@
 
 
 // normal of line fitting point cloud
-bool estimate_normal(Vector2fVector &points, IntVector& indices, float &angle){
+bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle){
 
     size_t num_points = indices.size();
     
     // cout << "num_points: " << endl << num_points << endl;
-    Vector2f mean(0, 0);
+    Vector2d mean(0, 0);
     for (size_t index = 0; index < num_points; index++)
     {
 
@@ -27,7 +27,7 @@ bool estimate_normal(Vector2fVector &points, IntVector& indices, float &angle){
     for (size_t index = 0; index < num_points; index++)
     {
         size_t point_index = indices[index];
-        Vector2f centered_point = points[point_index] - mean;
+        Vector2d centered_point = points[point_index] - mean;
 
         num = num + centered_point.x() * centered_point.y();
         den = den + pow(centered_point.x(), 2);
@@ -44,14 +44,14 @@ bool estimate_normal(Vector2fVector &points, IntVector& indices, float &angle){
 
 
 // normal of line fitting point cloud
-bool estimate_normal(Vector2fVector &points, IntVector& indices, Vector2f &normal){
+bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &normal){
 
     size_t num_points = indices.size();
 
     // Center the data
 
     // - compute mean
-    Vector2f mean(0, 0);
+    Vector2d mean(0, 0);
     for (size_t point_index = 0; point_index < num_points; point_index++)
     {
         mean = mean + points[indices[point_index]];
@@ -61,7 +61,7 @@ bool estimate_normal(Vector2fVector &points, IntVector& indices, Vector2f &norma
     // cout << endl << mean << endl;
 
     // - subtract mean from each point
-    Eigen::Matrix2Xf data(2, num_points);
+    Eigen::Matrix2Xd data(2, num_points);
     for (size_t point_index = 0; point_index < num_points; point_index++)
     {
         data.block(0, point_index, 2, 1) = points[indices[point_index]] - mean;
@@ -72,7 +72,7 @@ bool estimate_normal(Vector2fVector &points, IntVector& indices, Vector2f &norma
 
     // Calculate the covariance matrix
 
-    Matrix2f covariance;
+    Matrix2d covariance;
     covariance.setZero();
 
     for (size_t point_index = 0; point_index < num_points; point_index++)
@@ -83,29 +83,31 @@ bool estimate_normal(Vector2fVector &points, IntVector& indices, Vector2f &norma
     // Calculate the covariance eigen values and eigen vectors
 
     // Eigen decomposition
-    Eigen::EigenSolver<Eigen::Matrix2f> evd(covariance);
+    Eigen::EigenSolver<Eigen::Matrix2d> evd(covariance);
     float lambda1, lambda2;
     lambda1 = evd.eigenvalues().x().real();
     lambda2 = evd.eigenvalues().y().real();
-    Eigen::Vector2f v1, v2;
+    Vector2d v1, v2;
     v1 = evd.eigenvectors().col(0).real();
     v2 = evd.eigenvectors().col(1).real();
 
     if (lambda1 < lambda2) normal = v1;
     else normal = v2;
 
+    // normal = normal + mean;
+
     
     // cout << "EIGEN " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
     // Svd decomposition
     // int setting = Eigen::ComputeThinU | Eigen::ComputeThinV;
     int setting = Eigen::ComputeFullU | Eigen::ComputeFullV;
-    Eigen::JacobiSVD<Eigen::Matrix2f> svd = covariance.jacobiSvd(setting);
+    Eigen::JacobiSVD<Eigen::Matrix2d> svd = covariance.jacobiSvd(setting);
 
-    Eigen::Matrix2f U = svd.matrixU();
-    normal = Eigen::Vector2f(U.col(1));
+    Eigen::Matrix2d U = svd.matrixU();
+    normal = Eigen::Vector2d(U.col(1));
 
-    Eigen::Matrix2f V = svd.matrixV();
-    normal = Eigen::Vector2f(V.col(1));
+    Eigen::Matrix2d V = svd.matrixV();
+    normal = Eigen::Vector2d(V.col(1));
 
     // normal = normal / normal.norm();
     

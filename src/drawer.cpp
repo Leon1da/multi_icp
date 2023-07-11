@@ -129,25 +129,11 @@ class Drawer
         void clear();
         void show();
 
-        void drawLine(Eigen::Vector2f& start_point, Eigen::Vector2f& end_point, DrawerController& controller, Scalar& color);
-        void drawLines(Vector2fVector& start_points, Vector2fVector& end_points , DrawerController& controller, Scalar& color);
+        void drawLine(Eigen::Vector2d& start_point, Eigen::Vector2d& end_point, DrawerController& controller, Scalar& color);
         
-        void drawPoint(Eigen::Vector2f& point, DrawerController& controller, Scalar& color);
-        void drawPoints(Vector2fVector& points, DrawerController& controller, Scalar& color);
+        void drawPoint(Eigen::Vector2d& point, DrawerController& controller, Scalar& color);
         
-        void drawPose(Eigen::Vector3f& pose, DrawerController& controller, Scalar& color);
-        void drawPoses(Vector3fVector& poses, DrawerController& controller, Scalar& color);
-
-        void drawSensor(Eigen::Vector3f& sensor_pose, DrawerController& controller, Scalar& color);
-        void drawSensors(Vector3fVector& sensors_poses, DrawerController& controller, Scalar& color);
-
-
-        void drawPosesPoints(Vector3fVector& poses, Vector3fVector& sensor_poses, vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color);
-
-        void drawCorrespondences(vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color);
-        
-        void drawNormal(Eigen::Vector2f& point, float angle, DrawerController& controller, Scalar& color);
-        void drawNormals(Vector2fVector& points, FloatVector &angles, DrawerController& controller, Scalar& color);
+        void drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scalar& color);
         
         bool isOutsideImage(Eigen::Vector2f& point);
         bool isOutsideImage(float x, float y);
@@ -214,9 +200,9 @@ bool Drawer::isOutsideImage(float x, float y){
     return x < 0 || x >= height() || y < 0 || y >= width(); 
 }
 
-void Drawer::drawLine(Eigen::Vector2f& start_point, Eigen::Vector2f& end_point, DrawerController& controller, Scalar& color){
+void Drawer::drawLine(Eigen::Vector2d& start_point, Eigen::Vector2d& end_point, DrawerController& controller, Scalar& color){
 
-    float ri, ci, rf, cf;
+    double ri, ci, rf, cf;
     
     ci = controller.scale() * start_point.x() + controller.u();
     ri = controller.scale() * start_point.y() + controller.v();
@@ -227,9 +213,9 @@ void Drawer::drawLine(Eigen::Vector2f& start_point, Eigen::Vector2f& end_point, 
     cv::line(image(), cv::Point(ci,ri), cv::Point(cf,rf), color);
 }
 
-void Drawer::drawPoint(Eigen::Vector2f& point, DrawerController& controller, Scalar& color){
+void Drawer::drawPoint(Eigen::Vector2d& point, DrawerController& controller, Scalar& color){
     
-    float r, c;
+    double r, c;
     // int radius = 1 * controller.scale();
     int radius = 1;
 
@@ -241,10 +227,10 @@ void Drawer::drawPoint(Eigen::Vector2f& point, DrawerController& controller, Sca
     cv::circle(image(), cv::Point(c,r), radius, color);
 }
 
-void Drawer::drawPose(Eigen::Vector3f& pose, DrawerController& controller, Scalar& color){
-    float ri, ci, rf, cf;
+void Drawer::drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scalar& color){
+    double ri, ci, rf, cf;
     
-    float theta = pose.z();
+    double theta = pose.z();
     ci = controller.scale() * pose.x() + controller.u();
     ri = controller.scale() * pose.y() + controller.v();
     
@@ -261,86 +247,3 @@ void Drawer::drawPose(Eigen::Vector3f& pose, DrawerController& controller, Scala
 
 }
 
-void Drawer::drawSensor(Eigen::Vector3f& sensor_pose, DrawerController& controller, Scalar& color){
-    
-    float ri, ci, rf, cf;
-    
-    float theta = sensor_pose.z();
-    ci = controller.scale() * sensor_pose.x() + controller.u();
-    ri = controller.scale() * sensor_pose.y() + controller.v();
-    
-    // int radius = 1 * controller.scale();
-    int radius = 1;
-    cf = ci + radius * cos(theta);
-    rf = ri + radius * sin(theta);
-
-    if (isOutsideImage(ci, ri)) return;
-
-    cv::line(image(), cv::Point(ci,ri), cv::Point(cf,rf), color);
-    cv::circle(image(), cv::Point(ci,ri), radius, color);
-    // cv::circle(image(), cv::Point(ci,ri), 6*controller.scale(), color);
-    
-
-}
-
-
-void Drawer::drawPosesPoints(Vector3fVector& poses, Vector3fVector& sensor_poses, vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color){
-    for(auto correspondence : correspondences){
-        int pose_index, point_index;
-        pose_index = correspondence.first;
-        point_index = correspondence.second;
-        const Eigen::Vector3f pose = poses[pose_index];
-        const Eigen::Vector3f sensor_pose = sensor_poses[pose_index];
-        const Eigen::Vector2f point = points[pose_index][point_index];
-        Eigen::Vector2f point_pose_rf = v2t(pose) * v2t(sensor_pose) * point;
-        drawPoint(point_pose_rf, controller, color);
-
-    }
-}
-
-void Drawer::drawLines(Vector2fVector& start_points, Vector2fVector& end_points, DrawerController& controller, Scalar& color){
-    for (size_t i = 0; i < start_points.size(); i++)
-        drawLine(start_points[i], end_points[i], controller, color); 
-    
-}
-
-void Drawer::drawPoints(Vector2fVector& points, DrawerController& controller, Scalar& color){
-    for (auto point : points) drawPoint(point, controller, color);
-}
-
-void Drawer::drawPoses(Vector3fVector& poses, DrawerController& controller, Scalar& color){
-    for (size_t pose_index = 0; pose_index < poses.size(); pose_index++)
-    {
-        drawPose(poses[pose_index], controller, color);
-    }
-    
-}
-
-void Drawer::drawSensors(Vector3fVector& sensors_poses, DrawerController& controller, Scalar& color){
-    for (size_t pose_index = 0; pose_index < sensors_poses.size(); pose_index++)
-    {
-        drawSensor(sensors_poses[pose_index], controller, color);
-    }
-    
-}
-
-// void Drawer::drawCorrespondences(vector<Vector2fVector>& points, IntPairVector& correspondences, DrawerController& controller, Scalar& color){
-//     for(auto correspondence : correspondences){
-//         drawLine(points[correspondence.first], points[correspondence.second], controller, color);   
-//     }
-// }
-
-void Drawer::drawNormal(Eigen::Vector2f& point, float angle, DrawerController& controller, Scalar& color){
-    float offset = 0.025;
-    
-    float x2 = point.x() + offset*cos(angle);
-    float y2 = point.y() + offset*sin(angle);
-    
-    Eigen::Vector2f end(x2, y2);
-    drawLine(point, end, controller, color);
-    
-}
-
-void Drawer::drawNormals(Vector2fVector& points, FloatVector& angles, DrawerController& controller, Scalar& color){
-    for (size_t i = 0; i < points.size(); i++) drawNormal(points[i], angles[i], controller, color);
-}

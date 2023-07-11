@@ -6,6 +6,7 @@
 #include <vector>
 #include <iomanip>
 #include <queue>
+#include <limits.h>
 
 #include <Eigen/Eigenvalues> 
 #include <Eigen/Core>
@@ -22,26 +23,40 @@ typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> >
 typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > Vector2fVector;
 typedef std::vector<Eigen::Isometry2f, Eigen::aligned_allocator<Eigen::Isometry2f> > Isometry2fVector;
 
-
-
-
 typedef Eigen::Matrix<float, 2, 1> Vector2f;
 typedef Eigen::Matrix<float, 3, 1> Vector3f;
 typedef Eigen::Matrix<float, 4, 1> Vector4f;
 typedef Eigen::Matrix<float, 6, 1> Vector6f;
 
 
+typedef Eigen::Matrix<double, 2, 2> Matrix2d;
+
 typedef Eigen::Matrix<float, 2, 2> Matrix2f;
 typedef Eigen::Matrix<float, 3, 3> Matrix3f;
 typedef Eigen::Matrix<float, 6, 6> Matrix6f;
 
 typedef Eigen::Matrix<float, 1, 3> Matrix1_3f;
-
 typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
+
+
+
+
+typedef std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd> > VectorXdVector;
+typedef std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > Vector3dVector;
+typedef std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > Vector2dVector;
+typedef std::vector<Eigen::Isometry2d, Eigen::aligned_allocator<Eigen::Isometry2d> > Isometry2dVector;
+
+typedef Eigen::Matrix<double, 1, 3> Matrix1_3d;
+
+typedef Eigen::Matrix<double, 2, 1> Vector2d;
+typedef Eigen::Matrix<double, 3, 1> Vector3d;
+typedef Eigen::Matrix<double, 4, 1> Vector4d;
 
 
 typedef std::vector<int> IntVector;
 typedef std::vector<float> FloatVector;
+typedef std::vector<double> DoubleVector;
+typedef std::vector<bool> BoolVector;
 
 typedef std::pair<float, float> FloatPair;
 typedef std::pair<int,int> IntPair;
@@ -113,8 +128,25 @@ inline Eigen::Isometry2f v2t(const Eigen::Vector3f& t){
     return T;
 }
 
+inline Eigen::Isometry2d v2t(const Eigen::Vector3d& t){
+    Eigen::Isometry2d T;
+    T.setIdentity();
+    T.translation()=t.head<2>();
+    float c = cos(t(2));
+    float s = sin(t(2));
+    T.linear() << c, -s, s, c;
+    return T;
+}
+
 inline Eigen::Vector3f t2v(const Eigen::Isometry2f& t){
     Eigen::Vector3f v;
+    v.head<2>()=t.translation();
+    v(2) = atan2(t.linear()(1,0), t.linear()(0,0));
+    return v;
+}
+
+inline Eigen::Vector3d t2v(const Eigen::Isometry2d& t){
+    Eigen::Vector3d v;
     v.head<2>()=t.translation();
     v(2) = atan2(t.linear()(1,0), t.linear()(0,0));
     return v;
@@ -147,6 +179,25 @@ inline Eigen::Matrix3f Rz(float rot_z){
     R << c,  -s,  0,
         s,  c,  0,
         0,  0,  1;
+    return R;
+}
+
+inline Eigen::Matrix3d Rz(double rot_z){
+    double c=cos(rot_z);
+    double s=sin(rot_z);
+    Eigen::Matrix3d R;
+    R << c,  -s,  0,
+        s,  c,  0,
+        0,  0,  1;
+    return R;
+}
+
+inline Eigen::Isometry2d dRz(double rot_z){
+    Eigen::Isometry2d R;
+    double c=cos(rot_z);
+    double s=sin(rot_z);
+    R.setIdentity();
+    R.linear() << -s, -c, c, -s;
     return R;
 }
 

@@ -1,6 +1,6 @@
 # include "defs.h"
 
-bool estimate_normal(Vector2fVector &points, IntVector& indices, float &angle);
-bool estimate_normal(Vector2fVector &points, IntVector& indices, Vector2f &normal);
+bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle);
+bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &normal);
 
 

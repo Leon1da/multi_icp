@@ -36,14 +36,14 @@ int main (int argc, char** argv) {
 
     vector<vector<MapPoint>> map;
 
-    Vector2fVector points;
-    Vector3fVector poses;
-    Vector3fVector sensor_poses;
+    Vector2dVector points;
+    Vector3dVector poses;
+    Vector3dVector sensor_poses;
     
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, 0, 50);
+    dataset.load_data(poses, sensor_poses, points, map, 0, 2);
 
 
     // for(auto pose : poses) cout << pose << endl << endl;
@@ -129,7 +129,7 @@ int main (int argc, char** argv) {
 
     cout << "Estimating surface normals" << endl;
     
-    Vector2fVector normals;
+    Vector2dVector normals;
     
     for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
     {
@@ -142,9 +142,9 @@ int main (int argc, char** argv) {
           IntVector indices;
           for (auto correspondence : correspondences) indices.push_back(correspondence._dst_point);
 
-          float normal_vector_angle;
+          double normal_vector_angle;
           if (estimate_normal(points, indices, normal_vector_angle)) {
-            Vector2f normal;
+            Vector2d normal;
             normal << cos(normal_vector_angle), sin(normal_vector_angle);
             normals.push_back(normal);
             map_point.set_normal_index(normals.size() - 1);
@@ -275,13 +275,13 @@ int main (int argc, char** argv) {
         
         for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
-          Vector3f world_pose = poses[pose_index];
+          Vector3d world_pose = poses[pose_index];
           drawer.drawPose(world_pose, drawer_controller, red);
 
           for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
           {
             MapPoint map_point = map[pose_index][point_index];
-            Vector2f world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+            Vector2d world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
             drawer.drawPoint(world_point, drawer_controller, black);
           
           }
@@ -322,7 +322,7 @@ int main (int argc, char** argv) {
             // update poses
             for (size_t pose_index = 0; pose_index < state.size(); pose_index++)
             {
-              poses[pose_index] = t2v(v2t(poses[pose_index]) * state[pose_index]);
+              poses[pose_index] = t2v(v2t(poses[pose_index]) * Eigen::Isometry2d(state[pose_index]));
 
             }
 
