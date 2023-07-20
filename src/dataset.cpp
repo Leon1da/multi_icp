@@ -248,7 +248,7 @@ void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vec
         ref_pose = pose;
         ref_distance = 0;
 
-        cout << "Loading pose # [ " <<  pose_index << "] " << pose.transpose() << endl;
+        // cout << "Loading pose # [ " <<  pose_index << "] " << pose.transpose() << endl;
         
         Eigen::Vector3d sensor_pose = record.offset();
         

@@ -10,10 +10,47 @@
 int main (int argc, char** argv) {
     
   
-    cout << "Correspondence Finder." << endl << endl;
-    
-    std::string dataset_filename = "/home/leonardo/multi_icp/dataset/dataset_test.txt";
+    cout << "Test Correspondence Finder using poses." << endl << endl;
 
+    OptionParser op;
+    
+    auto help_option   = op.add<Switch>("h", "help", "The following options are available.");
+    
+    // absolute dataset path
+    // "/home/leonardo/multi_icp/dataset/dataset_test.txt"
+    
+    // data options 
+    string dataset_filename;
+    auto dataset_option = op.add<Value<string>>("p", "dataset_path", "[DATASET] Path of the file containg the map to be optimized.", "../../dataset/dataset_test.txt", &dataset_filename);
+    
+    // int dataset_from_pose_number;
+    // auto dataset_from_pose_number_option = op.add<Value<int>>("f", "from_pose", "[DATASET] From which record start to load the dataset", 0, &dataset_from_pose_number);
+    
+    // int dataset_num_pose;
+    // auto dataset_num_pose_option = op.add<Value<int>>("n", "num_pose", "[DATASET] How many record load", 10, &dataset_num_pose);
+    
+    // finder options
+    
+    int poses_kdtree_dim;
+    auto poses_kdtree_dim_option = op.add<Value<int>>("y", "poses_kdtree_dim", "[FINDER] Dimension of the kdtrees containing the poses (2 or 4)", 2, &poses_kdtree_dim);
+
+    op.parse(argc, argv);
+
+    // print auto-generated help message
+    if (help_option->is_set()){
+      cout << op << "\n";
+      return 0;
+    
+    }
+      
+    
+    cout << "Configuration: " << endl;
+    
+    cout << " - [DATASET] dataset_path = " << dataset_filename << endl;
+    cout << " - [FINDER] poses_tree_size = " << poses_kdtree_dim << endl;
+    cout << endl;
+
+    
     Dataset dataset(dataset_filename);
 
     vector<vector<MapPoint>> map;
@@ -27,9 +64,6 @@ int main (int argc, char** argv) {
 
     dataset.load_data(poses, sensor_poses, points, map, 0, 500);
 
-
-    // for(auto pose : poses) cout << pose << endl << endl;
-    // for(auto point : points) cout << point << endl << endl;
 
     size_t num_poses = poses.size();
     size_t num_points = points.size();
@@ -50,11 +84,25 @@ int main (int argc, char** argv) {
     cout << "Loading correspondence finder." << endl;
 
     kdt::CorrespondenceFinder finder;
+    
     finder.init(poses, points);
 
-    finder.load_poses_2dtree();
-    finder.load_poses_4dtree();
-
+    switch (poses_kdtree_dim)
+    {
+      case 2:
+        cout << "Loading poses 2dtree.." << endl;
+        finder.load_poses_2dtree();
+        break;
+      case 4:
+        cout << "Loading poses 4dtree.." << endl;
+        finder.load_poses_4dtree();
+        break;
+      default:
+        throw runtime_error("Not implemented exception");
+        cout << "Error during load poses kdtree, supported dimensions are 2 and 4." << endl;
+        
+    }
+    
     cout << "Loading correspondence finder complete." << endl;
     
     cout << "Finding for global correspondences." << endl;
@@ -65,8 +113,8 @@ int main (int argc, char** argv) {
     {
 
       IntVector pose_neighbors;
-      // bool pose_found = finder.find_pose_neighbors(pose_index, 5, pose_neighbors);
-      bool pose_found = finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors, 4);
+      // bool pose_found = finder.find_pose_neighbors(pose_index, 3, pose_neighbors, poses_kdtree_dim);
+      bool pose_found = finder.find_pose_neighbors(pose_index, 1.5, pose_neighbors, poses_kdtree_dim);
       if (!pose_found) continue;
 
       for (size_t i = 0; i < pose_neighbors.size(); i++)
@@ -86,7 +134,7 @@ int main (int argc, char** argv) {
     int width = 800;
     int height = 800;
   
-    Drawer drawer(width, height, "test_correspondences");
+    Drawer drawer(width, height, "test_poses_correspondences");
 
     // DrawerController drawer_controller(5.0, 5.0, 0.5);
     DrawerController drawer_controller(height/4, width/4, 5.0, 5.0, 5.0, 5.0);

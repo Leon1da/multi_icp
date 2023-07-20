@@ -4,7 +4,7 @@ class MultiICPSolver{
     
     private:
               
-      Isometry2fVector* _state;                  //< this will hold our state
+      Isometry2dVector* _state;                  //< this will hold our state
       double _kernel_thereshold;        //< threshold for the kernel
       double _damping;                  //< damping, to slow the solution
       int _min_num_inliers;            //< if less inliers than this value, the solver stops
@@ -33,12 +33,12 @@ class MultiICPSolver{
       //! @param state: the state
       //! @param poses: the poses of the world
       //! @param points: the points of the world
-      void init(Isometry2fVector& state,
+      void init(Isometry2dVector& state,
           const Vector3dVector& poses,
           const Vector2dVector& points,
           const Vector2dVector& normals,
-          float kernel_threshold=0.05, 
-          float damping=1.0);
+          double kernel_threshold=1.0, 
+          double damping=1.0);
 
       inline float kernelThreshold() const {return _kernel_thereshold;}
 
@@ -48,7 +48,7 @@ class MultiICPSolver{
 
     
       //! accessor to the state
-      Isometry2fVector* state() {return _state;}
+      Isometry2dVector* state() {return _state;}
 
       //! chi square of the "good" points
       const double chiInliers() const {return _chi_inliers;}
@@ -77,14 +77,16 @@ MultiICPSolver::MultiICPSolver(){
   _poses=0;
   _points=0;
   _normals=0;
-  _damping=1;
+  
   _min_num_inliers=0;
   _num_inliers=0;
   _num_outliers=0;
+
+  _damping=1;
   _kernel_thereshold=1;
 }
 
-void MultiICPSolver::init(Isometry2fVector& state, const Vector3dVector& poses, const Vector2dVector& points, const Vector2dVector& normals, float kernel_threshold, float damping){
+void MultiICPSolver::init(Isometry2dVector& state, const Vector3dVector& poses, const Vector2dVector& points, const Vector2dVector& normals, double kernel_threshold, double damping){
   _state = &state;
   _poses = &poses;
   _points = &points;
@@ -208,36 +210,43 @@ bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep
   cout << "linearize.." << endl;
   linearize(correspondences,  keep_outliers);
 
-  size_t state_size = (*_state).size();
-
-    
-
-  if(_num_inliers<_min_num_inliers) {
+  if(_num_inliers <_min_num_inliers) {
     cerr << "too few inliers, skipping" << endl;
     return false;
   }
 
+  size_t state_size = (*_state).size();
   
-  Eigen::MatrixXf H = _H.cast<float>();
-  Eigen::VectorXf b = _b.cast<float>();
-
-  Eigen::MatrixXf damping(3 * state_size, 3 * state_size);
+  Eigen::MatrixXd damping(3 * state_size, 3 * state_size);
   damping.setIdentity();
   damping = damping * _damping;
 
-  H += damping;
+  _H += damping;
   
   cout << "solving system.." << endl;
+  Eigen::VectorXd dx;
+
+  // dx = _H.bdcSvd().solve(-_b);
+  // cout << dx << endl << endl;
+
+  // dx = _H.fullPivHouseholderQr().solve(-_b);
+  // cout << dx << endl << endl;
   
-  Eigen::VectorXf dxf = H.ldlt().solve(-b);
-  // Eigen::VectorXd dxd = _H.ldlt().solve(-_b);
+  // dx = _H.colPivHouseholderQr().solve(-_b);
+  // // cout << dx << endl << endl;
 
-  Eigen::VectorXf dx = dxf;
-
+  // dx = _H.fullPivLu().solve(-_b);
+  // // cout << dx << endl << endl;
+  
+  // dx = _H.colPivHouseholderQr().solve(-_b);
+  // cout << dx << endl << endl;
+  
+  dx = _H.ldlt().solve(-_b);
+  // cout << dx << endl << endl;
+  
   cout << "updating state.." << endl;
   for (size_t i = 0; i < state_size; i++){
-    Vector3f dx_pose = dx.segment(i*3, 3);
-    // Vector3f dxfloat_pose = dx_pose.cast<float>();
+    Vector3d dx_pose = dx.segment(i*3, 3);
     (*_state)[i] = v2t(dx_pose);
   }
   

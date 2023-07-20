@@ -55,7 +55,7 @@ namespace kdt
 
 			/** @brief Re-builds k-d tree.
 			*/
-			void build(const VectorXdVector& points,const int dim)
+			void build(const VectorXdVector& points, const int dim)
 			{
 				clear();
 
@@ -65,7 +65,7 @@ namespace kdt
 				std::vector<int> indices(points.size());
 				std::iota(std::begin(indices), std::end(indices), 0);
 
-				root_ = buildRecursive(indices.data(), (int)points.size(), 0);
+				root_ = buildRecursive(indices.data(), (int) points.size(), 0);
 			}
 
 			/** @brief Clears k-d tree.
@@ -240,30 +240,29 @@ namespace kdt
 			}
 
 			static double distance(const Eigen::VectorXd& p, const Eigen::VectorXd& q, int dim)
-			{	
-				Eigen::Vector2d diff = p - q;
-				return diff.norm();
+			{
+				// cout << "distance ( p: " << p << " q: " << q << " dim: " << dim << " )" << endl;
 				
 				if (dim == 2) {
-					Eigen::Vector2d diff = p - q;
+					Vector2d diff = p - q;
+					// cout << " dim 2 diff: " << diff <<endl;
 					return diff.norm();
+
 				} else if (dim == 4) {
-					// Eigen::Vector4d diff = p - q;
+					// TODO implements different distance functions
+					Vector4d diff = p - q;
 					// return diff.norm();
-					
-					float lambda = 0.8;
-					Eigen::Matrix4d omega = Eigen::Matrix4d();
-					omega.setZero();
-					omega.diagonal() << lambda, lambda, 1-lambda, 1-lambda;
-					Eigen::Vector4d diff = p - q;
-					
-					return sqrt(diff.transpose() * omega * diff);
 
-					// Eigen::Vector2d pos = diff.block(0, 0, 2, 1);
-					// Eigen::Vector2d dir = diff.block(2, 0, 2, 1);
-					// return pos.norm() * lambda + dir.norm() * (1 - lambda);
+					double alpha = 0.2;
+					Vector2d pos = diff.block(0, 0, 2, 1);
+					Vector2d vec = diff.block(2, 0, 2, 1);
 
+					double norm = sqrt((1-alpha)*(pow(pos.x(), 2) + pow(pos.y(), 2)) + alpha * (pow(vec.x(), 2) + pow(vec.y(), 2)));
+					return norm;
+
+					
 				} else {
+					new runtime_error("Not implemented exception");
 					return 0;
 				}
 			}
@@ -425,7 +424,8 @@ namespace kdt
 			void set_normals(Vector2dVector* normals){
 				_normals = normals;
 			}
-
+			
+			// points 2dtree
 			void load_points_2dtree(int pose_index, IntVector points_indices){
 				VectorXdVector tree_points;
 				for (size_t i = 0; i < points_indices.size(); i++)
@@ -434,22 +434,6 @@ namespace kdt
 				}
 				_points_2dtrees[pose_index].build(tree_points, 2);
 
-			}
-
-			void load_points_4dtree(int pose_index, IntVector points_indices, IntVector normals_indices){
-				assert(points_indices.size() == normals_indices.size());
-				
-				VectorXdVector tree_points;
-				for (size_t i = 0; i < points_indices.size(); i++)
-				{
-					Vector2d point = (*_points)[points_indices[i]];
-					Vector2d normal = (*_normals)[normals_indices[i]];
-					Vector4d tree_point = Vector4d(point.x(), point.y(), normal.x(), normal.y());
-					tree_points.push_back(tree_point);
-				}
-
-				_points_4dtrees[pose_index].build(tree_points, 4);
-				
 			}
 
 			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int num_neighbors, vector<pair<double, int>>& neighbors){
@@ -467,26 +451,6 @@ namespace kdt
 				return true;
 			}
 
-			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, int num_neighbors, vector<pair<double, int>>& neighbors){
-				Vector3d pose = (*_poses)[pose_index];
-				Vector3d tree_pose = (*_poses)[tree_index];
-
-				Vector2d point = (*_points)[point_index];
-				Vector2d world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
-				
-				Vector2d normal = (*_normals)[normal_index]; 
-				// Vector2d world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
-				Vector2d world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
-
-				Vector4d query_point = Vector4d(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
-				
-				_points_4dtrees[tree_index].knnSearch(query_point, num_neighbors, neighbors);
-				
-				if (!neighbors.size()) return false;
-			
-				return true;
-			}
-			
 			bool find_point_neighbors(int tree_index, int pose_index, int point_index, double radius, vector<pair<double, int>>& neighbors){
 				Vector2d point = (*_points)[point_index];
 				Vector3d pose = (*_poses)[pose_index];
@@ -496,26 +460,6 @@ namespace kdt
 				Vector2d query_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
 				
 				_points_2dtrees[tree_index].radiusSearch(query_point, radius, neighbors);
-				
-				if (!neighbors.size()) return false;
-				
-				return true;
-			}
-
-			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, double radius, vector<pair<double, int>>& neighbors){
-				
-				Vector3d pose = (*_poses)[pose_index];
-				Vector3d tree_pose = (*_poses)[tree_index];
-
-				Vector2d point = (*_points)[point_index];
-				Vector2d world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
-				
-				Vector2d normal = (*_normals)[normal_index];
-				// Vector2d world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
-				Vector2d world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
-
-				Vector4d query_point = Vector4d(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
-				_points_4dtrees[tree_index].radiusSearch(query_point, radius, neighbors);
 				
 				if (!neighbors.size()) return false;
 				
@@ -537,27 +481,90 @@ namespace kdt
 
 			}
 
-			bool find_point_neighbor(int tree_index, int pose_index, int point_index, int normal_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT){
+			// points 4dtree
+			void load_points_4dtree(int pose_index, IntVector points_indices, IntVector normals_indices){
+				assert(points_indices.size() == normals_indices.size());
+				
+				VectorXdVector tree_points;
+				for (size_t i = 0; i < points_indices.size(); i++)
+				{
+					Vector2d point = (*_points)[points_indices[i]];
+					Vector2d normal = (*_normals)[normals_indices[i]];
+					// Vector2d normal = Vector2d(0, 0);
+					Vector4d tree_point = Vector4d(point.x(), point.y(), normal.x(), normal.y());
+					tree_points.push_back(tree_point);
+				}
+
+				_points_4dtrees[pose_index].build(tree_points, 4);
+				
+			}
+
+			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, int num_neighbors, vector<pair<double, int>>& neighbors){
 				Vector3d pose = (*_poses)[pose_index];
 				Vector3d tree_pose = (*_poses)[tree_index];
 
 				Vector2d point = (*_points)[point_index];
-				Vector2d world_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
+				
+				Vector2d point_in_tree_pose = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
+				
+				Vector2d normal = (*_normals)[normal_index]; 
+				// Vector2d world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
+				Vector2d normal_in_tree_pose = v2t(tree_pose).inverse().rotation() * v2t(pose).rotation() * normal; // normal in tree coordinates
+
+				Vector4d query_point = Vector4d(point_in_tree_pose.x(), point_in_tree_pose.y(), normal_in_tree_pose.x(), normal_in_tree_pose.y());
+				
+				_points_4dtrees[tree_index].knnSearch(query_point, num_neighbors, neighbors);
+				
+				if (!neighbors.size()) return false;
+			
+				return true;
+			}
+				
+			bool find_point_neighbors(int tree_index, int pose_index, int point_index, int normal_index, double radius, vector<pair<double, int>>& neighbors){
+				
+				Vector3d pose = (*_poses)[pose_index];
+				Vector3d tree_pose = (*_poses)[tree_index];
+
+				
+
+				Vector2d point = (*_points)[point_index];
+				Vector2d point_in_tree_pose = v2t(tree_pose).inverse() * v2t(pose) * point; // point in tree coordinates
 				
 				Vector2d normal = (*_normals)[normal_index];
-				
 				// Vector2d world_normal = v2t(tree_pose).inverse() * v2t(pose) * normal; // normal in tree coordinates
-				Vector2d world_normal = v2t(tree_pose).rotation().inverse() * v2t(pose).rotation() * normal; // normal in tree coordinates
-				
-				Vector4d query_point = Vector4d(world_point.x(), world_point.y(), world_normal.x(), world_normal.y());
-				_points_4dtrees[tree_index].nnSearch(query_point, neighbor);
+				Vector2d normal_in_tree_pose = v2t(tree_pose).inverse().rotation() * v2t(pose).rotation() * normal; // normal in tree coordinates
 
+				Vector4d query_point = Vector4d(point_in_tree_pose.x(), point_in_tree_pose.y(), normal_in_tree_pose.x(), normal_in_tree_pose.y());
+				_points_4dtrees[tree_index].radiusSearch(query_point, radius, neighbors);
+				
+				if (!neighbors.size()) return false;
+				
+				return true;
+			}
+
+			bool find_point_neighbor(int tree_index, int pose_index, int point_index, int normal_index, pair<double, int>& neighbor, double min_distance = MAXFLOAT){
+				Vector2d point = (*_points)[point_index];
+				Vector2d normal = (*_normals)[normal_index];
+				Vector3d pose = (*_poses)[pose_index];
+				Vector3d tree_pose = (*_poses)[tree_index];
+
+				Vector2d tree_point = v2t(tree_pose).inverse() * v2t(pose) * point; // point in the reference tree coordinates
+				Vector2d tree_normal = v2t(tree_pose).inverse().rotation() * v2t(pose).rotation() * normal; // normal in the reference tree coordinates
+				// tree_normal = tree_point + tree_normal;
+				// tree_normal = Vector2d(0, 0);
+				
+	
+				Vector4d query_point = Vector4d(tree_point.x(), tree_point.y(), tree_normal.x(), tree_normal.y());
+				_points_4dtrees[tree_index].nnSearch(query_point, neighbor);
+				
+				
 				if (neighbor.first > min_distance || neighbor.second == -1) return false;	
 							
 				return true;
 
 			}
 
+			// poses 2dtree
 			void load_poses_2dtree(){
 				VectorXdVector tree_poses;
 				for (size_t pose_index = 0; pose_index < _poses->size(); pose_index++)
@@ -568,6 +575,7 @@ namespace kdt
 				
 			}
 
+			// poses 4dtree
 			void load_poses_4dtree(){
 				VectorXdVector tree_poses;
 				for (size_t pose_index = 0; pose_index < _poses->size(); pose_index++)
@@ -653,28 +661,6 @@ namespace kdt
 
 			}
 
-
-			bool match_points(int tree_index, int pose_index, IntVector point_indices, IntVector& neighbors, DoubleVector& distances, BoolVector& success, double min_distance = MAXFLOAT){
-				for (size_t i = 0; i < point_indices.size(); i++)
-				{
-					int point_index = point_indices[i];
-					pair<double, int> neighbor;
-					bool point_found = find_point_neighbor(tree_index, pose_index, point_index, neighbor, min_distance);
-					if (point_found)
-					{
-						neighbors.push_back(neighbor.second);
-						distances.push_back(neighbor.first);
-						success.push_back(true);
-					} else {
-						neighbors.push_back(-1);
-						distances.push_back(-1);
-						success.push_back(false);
-					}
-				}
-
-				return true;
-				
-			}
           
 	};
 

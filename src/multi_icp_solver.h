@@ -1,19 +1,5 @@
 #include "defs.h"
 
-
-  /**
-     Solver for point-to-point problem.
-     Implements a least squares solver using translation+euler angles as minimal parameterization
-     A simple saturating robust kernel, and an adjustable damping coefficient;
-     To use it:
-     - create an object
-     - initialize it passing:
-       - the image points (that represent the measurements)
-       - the world points (that represent the model)
-       - A state whose pose is initialized at initial_guess
-     - call oneRound(<correspondences>) a bunch of times, with the correspondences returned by the finder;
-       at each call, the solution will be subject to one ls operation
-   */
   class MultiICPSolver{
     
     private:
@@ -22,8 +8,7 @@
 
       void linearize(const TriplePairVector& correspondences, bool keep_outliers);
 
-              
-      Isometry2fVector* _state;                   //< this will hold our state
+      Isometry2dVector* _state;                   //< this will hold our state
       double _kernel_thereshold;                   //< threshold for the kernel
       double _damping;                             //< damping, to slow the solution
       int _min_num_inliers;                       //< if less inliers than this value, the solver stops
@@ -47,12 +32,12 @@
       //! @param state: the state
       //! @param poses: the poses of the world
       //! @param points: the points of the world
-      void init(Isometry2fVector& state,
+      void init(Isometry2dVector& state,
           const Vector3dVector& poses,
           const Vector2dVector& points, 
           const Vector2dVector& normals,
-          float kernel_threshold=0.05, 
-          float damping=1.0
+          double kernel_threshold=0.05, 
+          double damping=1.0
           );
     
       inline float kernelThreshold() const {return _kernel_thereshold;}
@@ -63,7 +48,7 @@
 
     
       //! accessor to the state
-      Isometry2fVector* state() {return _state;}
+      Isometry2dVector* state() {return _state;}
 
       //! chi square of the "good" points
       const double chiInliers() const {return _chi_inliers;}

@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <queue>
 #include <limits.h>
+#include <string_view>
+
+#include <charconv>
 
 #include <Eigen/Eigenvalues> 
 #include <Eigen/Core>
@@ -15,8 +18,11 @@
 #include <Eigen/StdVector>
 #include "opencv2/opencv.hpp"
 
+#include "popl.hpp"
+
 using namespace std;
 using namespace cv;
+using namespace popl;
 
 typedef std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf> > VectorXfVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;

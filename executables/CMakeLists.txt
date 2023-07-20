@@ -1,12 +1,21 @@
 link_libraries(${OpenCV_LIBS})
 
-
-add_executable(test_dataset_reader test_dataset_reader.cpp
+add_executable(test_multi_icp_complete test_multi_icp_complete.cpp
     ../src/dataset.cpp
     ../src/drawer.cpp
+    ../src/utils.cpp
+    ../src/multi_icp_solver.cpp
 )
 
-target_link_libraries(test_dataset_reader opencv_highgui)
+target_link_libraries(test_multi_icp_complete opencv_highgui)
+
+
+# add_executable(test_dataset_reader test_dataset_reader.cpp
+#     ../src/dataset.cpp
+#     ../src/drawer.cpp
+# )
+
+# target_link_libraries(test_dataset_reader opencv_highgui)
 
 
 # add_executable(test_points_correspondences test_points_correspondences.cpp
@@ -34,49 +43,3 @@ target_link_libraries(test_dataset_reader opencv_highgui)
 
 # target_link_libraries(test_normals opencv_highgui)
 
-# add_executable(test_multi_icp_solver_v2 test_multi_icp_solver_v2.cpp
-#     ../src/dataset.cpp
-#     ../src/drawer.cpp
-#     ../src/utils.cpp
-#     ../src/multi_icp_solver.cpp
-# )
-
-# target_link_libraries(test_multi_icp_solver_v2 opencv_highgui)
-
-
-add_executable(test_multi_icp_solver_complete test_multi_icp_solver_complete.cpp
-    ../src/dataset.cpp
-    ../src/drawer.cpp
-    ../src/utils.cpp
-    ../src/multi_icp_solver.cpp
-)
-
-target_link_libraries(test_multi_icp_solver_complete opencv_highgui)
-
-# add_executable(test_multi_icp_solver test_multi_icp_solver.cpp
-#     ../src/dataset.cpp
-#     ../src/drawer.cpp
-#     ../src/utils.cpp
-#     ../src/multi_icp_solver.cpp
-# )
-
-# target_link_libraries(test_multi_icp_solver opencv_highgui)
-
-
-
-# add_executable(test_4dtree test_4dtree.cpp
-#     ../src/dataset.cpp
-#     ../src/drawer.cpp
-#     ../src/utils.cpp
-# )
-
-# target_link_libraries(test_4dtree opencv_highgui)
-
-# add_executable(test_multi_icp_solver_4dtree test_multi_icp_solver_4dtree.cpp
-#     ../src/dataset.cpp
-#     ../src/drawer.cpp
-#     ../src/utils.cpp
-#     ../src/multi_icp_solver.cpp
-# )
-
-# target_link_libraries(test_multi_icp_solver_4dtree opencv_highgui)
