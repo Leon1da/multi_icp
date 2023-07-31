@@ -16,6 +16,8 @@
 #include <Eigen/Geometry>
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
+#include <Eigen/Sparse>
+
 #include "opencv2/opencv.hpp"
 
 #include "popl.hpp"
@@ -23,6 +25,9 @@
 using namespace std;
 using namespace cv;
 using namespace popl;
+
+typedef Eigen::SparseMatrix<double> SparseMatrixd;
+typedef Eigen::Triplet<double> Tripletd;
 
 typedef std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf> > VectorXfVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;

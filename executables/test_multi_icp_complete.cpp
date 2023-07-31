@@ -128,7 +128,7 @@ int main (int argc, char** argv) {
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records);
+    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.1);
 
 
     // for(auto pose : poses) cout << pose << endl << endl;
@@ -437,9 +437,13 @@ int main (int argc, char** argv) {
           for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
           {
             IntVector pose_neighbors;
-
-            if (!finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors, poses_kdtree_dim)) continue;
-
+            // if (!finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors, poses_kdtree_dim)) continue;
+            if (!finder.find_pose_neighbors(pose_index, 20, pose_neighbors, poses_kdtree_dim)) continue;
+            // push the pose correspoondences inside the list
+            for (size_t i = 0; i < pose_neighbors.size(); i++) 
+              if (i != pose_neighbors[i]) 
+                poses_correspondences.push_back(IntPair(pose_index, pose_neighbors[i]));
+          
             for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
             {
               MapPoint& map_src_point = map[pose_index][point_index];
@@ -447,68 +451,51 @@ int main (int argc, char** argv) {
 
               IntTriple src(map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index());
                 
-              // double min_distance = std::numeric_limits<double>::max();
-              double min_distance = DBL_MAX;
-              IntTriple dst;
               for (size_t i = 0; i < pose_neighbors.size(); i++)
               {
                 size_t tree_index = pose_neighbors[i];
-                if (tree_index != pose_index){
-                  
-                  pair<double, int> point_neighbor;
-                  bool point_neighbor_exist = false;
-                  switch (points_kdtree_dim)
-                  {
-                    case 2:
-                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 0.1);
-                      // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 1);
-                      break;
-                    case 4:
-                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 0.05);
-                      // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 1);
-                      point_neighbor.second = index_map[tree_index][point_neighbor.second]; // IMPORTANT
-                      break;
-                    default:
-                      cout << "Error during finding point correspondences, supported kdtree dimension is 2 or 4." << endl;
-                      throw runtime_error("Not implemented exception");
-                      break;
-                  }
-                  if (point_neighbor_exist)
-                  {
-                    // TODO bug tree_point_index could be wrong if not all the normals have been estimated (corrected pay attention)
-                    int tree_point_index = point_neighbor.second;
-                    double tree_point_distance = point_neighbor.first;
-                    MapPoint& map_dst_point = map[tree_index][tree_point_index];
-                    if (!map_dst_point.has_normal()) continue;
-               
-                    if (tree_point_distance < min_distance)
-                    {
-                      min_distance = tree_point_distance;
-                      get<0>(dst) = map_dst_point.pose_index();
-                      get<1>(dst) = map_dst_point.point_index();
-                      get<2>(dst) = map_dst_point.normal_index();
-                      
-                    }
-                  }
+                if (tree_index == pose_index) continue; // avoid to match a pose with itself
+                
+                // looking for point neighbors
+                pair<double, int> point_neighbor;
+                bool point_neighbor_exist = false;
+                switch (points_kdtree_dim)
+                {
+                  case 2:
+                    point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 0.05);
+                    // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 1);
+                    break;
+                  case 4:
+                    point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 0.05);
+                    // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 1);
+                    point_neighbor.second = index_map[tree_index][point_neighbor.second]; // IMPORTANT
+                    break;
+                  default:
+                    cout << "Error during finding point correspondences, supported kdtree dimension is 2 or 4." << endl;
+                    throw runtime_error("Not implemented exception");
+                    break;
                 }
-              }
+                if (!point_neighbor_exist) continue;
 
-              if (min_distance != DBL_MAX)
-              {
-                // cout << "min_distance " << min_distance << endl;
+                // point neighbor
+                // TODO bug tree_point_index could be wrong if not all the normals have been estimated (corrected pay attention)
+                int tree_point_index = point_neighbor.second;
+                MapPoint& map_dst_point = map[tree_index][tree_point_index];
+                if (!map_dst_point.has_normal()) continue;
+
+                Vector2d n_src = v2t(poses[map_src_point.pose_index()]).rotation() * normals[map_src_point.normal_index()];
+                Vector2d n_dst = v2t(poses[map_dst_point.pose_index()]).rotation() * normals[map_dst_point.normal_index()];
+                if(n_src.dot(n_dst) < 0.8) continue;
+
+                // create correspondences and push inside the list of correspondences
+                // (a correspondence is a pair of triple CUR(pose_index, point_index, normal_index) <->  REF(pose_index, point_index, normal_index))
+                IntTriple dst = IntTriple(map_dst_point.pose_index(), map_dst_point.point_index(), map_dst_point.normal_index());
+              
                 pose_point_normal_correspondences.push_back(TriplePair(src, dst));
-                map_src_point.set_global_correspondences_index(pose_point_normal_correspondences.size() - 1, 1);
                 num_correspondences(get<0>(src), get<0>(dst))++;
-                // cout << "[ " << pose_index << " " << point_index << " ] global_neighbor found ( " << global_neighbor.first << " " << global_neighbor.second << " )." << endl;
-                    
-              } 
-            }             
-
-            for (size_t i = 0; i < pose_neighbors.size(); i++)
-            {
-              if (i != pose_neighbors[i]) poses_correspondences.push_back(IntPair(pose_index, pose_neighbors[i]));
+              
+              }             
             }
-            
           }
 
           // cout << num_correspondences << endl;
@@ -522,13 +509,12 @@ int main (int argc, char** argv) {
             TriplePair c = pose_point_normal_correspondences[i];
             int pose_i = get<0>(c.first);
             int pose_j = get<0>(c.second);
-            // if (pose_j < pose_i) continue;
-            if (num_correspondences(pose_i, pose_j) > min_poses_correspondences) {
-              // cout << pose_i << " " << pose_j << " "<< num_correspondences(pose_i, pose_j) << " ok" << endl;
-              cleaned_pose_point_normal_correspondences.push_back(c);
-            } else{
-              // cout << num_correspondences(pose_i, pose_j) << " ko" << endl;
-            }
+
+            // if the num metches between two poses is below the threshold discarges correspondences
+            if (num_correspondences(pose_i, pose_j) < min_poses_correspondences) continue;
+
+            // else put inside a new cleaned list of correspondences
+            cleaned_pose_point_normal_correspondences.push_back(c);
             
           }
 
