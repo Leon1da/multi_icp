@@ -20,7 +20,7 @@ class MultiICPSolver{
 
       bool errorAndJacobian(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
 
-      void linearize(const TriplePairVector& corresponendeces, bool keep_outliers);
+      void linearize(const TriplePairVector& corresponendeces, bool keep_outliers, vector<Eigen::Triplet<double>>& coefficients);
 
 
     public:
@@ -150,7 +150,7 @@ bool MultiICPSolver::errorAndJacobian(double& error,
 
 
 
-void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool keep_outliers){
+void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool keep_outliers, vector<Eigen::Triplet<double>> &coefficients){
   
   _H.setZero();
   _b.setZero();
@@ -189,10 +189,29 @@ void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool kee
 
     
     if (is_inlier || keep_outliers){
-      _H.block<3, 3>(cur_pose_index * 3, cur_pose_index * 3) += J_cur.transpose()*J_cur*lambda; // Ji' * Ji
-      _H.block<3, 3>(cur_pose_index * 3, ref_pose_index * 3) += J_cur.transpose()*J_ref*lambda; // Ji' * Jj
-      _H.block<3, 3>(ref_pose_index * 3, cur_pose_index * 3) += J_ref.transpose()*J_cur*lambda; // Jj' * Jj
-      _H.block<3, 3>(ref_pose_index * 3, ref_pose_index * 3) += J_ref.transpose()*J_ref*lambda; // Jj' * Ji
+      
+      Eigen::Matrix3d Jii = J_cur.transpose()*J_cur*lambda;
+      Eigen::Matrix3d Jij = J_cur.transpose()*J_ref*lambda;
+      Eigen::Matrix3d Jji = J_ref.transpose()*J_cur*lambda;
+      Eigen::Matrix3d Jjj = J_ref.transpose()*J_ref*lambda;
+      
+      for (size_t i = 0; i < 3; i++)
+      {
+        for (size_t j = 0; j < 3; j++)
+        {
+          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, cur_pose_index*3 + j, Jii.coeff(i,j)));
+          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, ref_pose_index*3 + j, Jij.coeff(i,j)));
+          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, cur_pose_index*3 + j, Jji.coeff(i,j)));
+          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, ref_pose_index*3 + j, Jjj.coeff(i,j)));
+
+        }
+        
+      }
+      
+      _H.block<3, 3>(cur_pose_index * 3, cur_pose_index * 3) += Jii; // Ji' * Ji
+      _H.block<3, 3>(cur_pose_index * 3, ref_pose_index * 3) += Jij; // Ji' * Jj
+      _H.block<3, 3>(ref_pose_index * 3, cur_pose_index * 3) += Jji; // Jj' * Ji
+      _H.block<3, 3>(ref_pose_index * 3, ref_pose_index * 3) += Jjj; // Jj' * Jj
 
       _b.block<3, 1>(cur_pose_index * 3, 0) += J_cur.transpose()*e*lambda;  // Ji' * e
       _b.block<3, 1>(ref_pose_index * 3, 0) += J_ref.transpose()*e*lambda;  // Jj' * e
@@ -207,8 +226,10 @@ void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool kee
 
 bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep_outliers){
 
+  std::vector<Eigen::Triplet<double>> coefficients;
+
   cout << "linearize.." << endl;
-  linearize(correspondences,  keep_outliers);
+  linearize(correspondences,  keep_outliers, coefficients);
 
   if(_num_inliers <_min_num_inliers) {
     cerr << "too few inliers, skipping" << endl;
@@ -217,11 +238,16 @@ bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep
 
   size_t state_size = (*_state).size();
   
+  // cout << _H << endl << endl << endl;
+
   Eigen::MatrixXd damping(3 * state_size, 3 * state_size);
   damping.setIdentity();
   damping = damping * _damping;
 
   _H += damping;
+
+
+  // cout << _H << endl << endl << endl;
   
   cout << "solving system.." << endl;
   Eigen::VectorXd dx;
@@ -241,8 +267,31 @@ bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep
   // dx = _H.colPivHouseholderQr().solve(-_b);
   // cout << dx << endl << endl;
   
-  dx = _H.ldlt().solve(-_b);
+  // dx = _H.ldlt().solve(-_b);
   // cout << dx << endl << endl;
+
+  
+  Eigen::SparseMatrix<double> _H_sparse(state_size*3, state_size*3);
+
+  // damping
+  for (size_t i = 0; i < state_size * 3; i++)
+  {
+    coefficients.push_back(Eigen::Triplet<double>(i, i, _damping));
+  }
+  
+  _H_sparse.setFromTriplets(coefficients.begin(), coefficients.end());
+
+  // cout << _H_sparse << endl << endl << endl;
+
+  Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> chol(_H_sparse);       // performs a Cholesky factorization of A
+  dx = chol.solve(-_b);                                                         // use the factorization to solve for the given right hand side
+  // cout << dx << endl << endl;
+
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
+  ldlt.compute(_H_sparse);
+  dx = ldlt.solve(-_b);
+
+  
   
   cout << "updating state.." << endl;
   for (size_t i = 0; i < state_size; i++){

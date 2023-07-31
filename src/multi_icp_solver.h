@@ -6,7 +6,7 @@
 
       bool errorAndJacobian(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
 
-      void linearize(const TriplePairVector& correspondences, bool keep_outliers);
+      void linearize(const TriplePairVector& correspondences, bool keep_outliers, vector<Eigen::Triplet<double>>& coefficients);
 
       Isometry2dVector* _state;                   //< this will hold our state
       double _kernel_thereshold;                   //< threshold for the kernel

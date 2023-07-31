@@ -16,9 +16,12 @@
 #include <Eigen/Geometry>
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
+#include <Eigen/Sparse>
+
 #include "opencv2/opencv.hpp"
 
 #include "popl.hpp"
+// #include "utils.h"
 
 using namespace std;
 using namespace cv;

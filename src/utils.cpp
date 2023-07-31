@@ -1,5 +1,12 @@
 #include "defs.h"
 
+// Vector2d cv_point_to_eigen_point(Point p){
+//     return Vector2d(p.x, p.y);
+// }
+
+// Point eigen_point_to_cv_point(Vector2d p){
+//     return Point(p.x(), p.y());
+// }
 
 // normal of line fitting point cloud
 bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle){
@@ -150,5 +157,6 @@ bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &norma
     
 
     // return true;
+
 
 

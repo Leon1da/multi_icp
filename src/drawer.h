@@ -32,6 +32,7 @@ class Drawer{
         int _height;
         string _window_name;
         Mat _image;
+        Vector2d _mean_data;
 
         
     public:
@@ -41,6 +42,10 @@ class Drawer{
         int height();
         string window_name();
         Mat image();
+        Eigen::Vector2d mean_data();
+
+        
+        void init(Vector3dVector& poses, Vector2dVector& points);
 
         void clear();
         void show();

@@ -115,7 +115,9 @@ class Drawer
     private:
         int _width, _height;
         string _window_name;
-        Mat _image;
+        Mat _image; 
+        Vector2d _data_mean;
+
 
     public:
         Drawer(int width, int height, string window_name);
@@ -124,7 +126,14 @@ class Drawer
         int width();
         int height();
         string window_name();
-        Mat image();
+        Mat image();  
+        
+        Eigen::Vector2d mean_data();
+      
+
+
+        
+        void init(Vector3dVector& poses, Vector2dVector& points);
 
         void clear();
         void show();
@@ -178,6 +187,24 @@ Mat Drawer::image(){
     return _image;
 }
 
+
+Vector2d Drawer::mean_data(){
+    return _data_mean;
+}
+
+void Drawer::init(Vector3dVector& poses, Vector2dVector& points){
+    Vector2d mean;
+
+    size_t num_poses = poses.size();
+    for (size_t i = 0; i < num_poses; i++) mean += poses[i].block(0, 0, 2, 1);
+    
+    size_t num_points = points.size();
+    for (size_t i = 0; i < num_points; i++) mean += points[i];
+    
+    mean = mean / (num_poses + num_points);
+    
+}
+
 void Drawer::clear(){
 
     _image = Mat(width(), height(), CV_8UC3, Scalar(255, 255, 255));
@@ -204,13 +231,16 @@ void Drawer::drawLine(Eigen::Vector2d& start_point, Eigen::Vector2d& end_point, 
 
     double ri, ci, rf, cf;
     
-    ci = controller.scale() * start_point.x() + controller.u();
-    ri = controller.scale() * start_point.y() + controller.v();
+    ci = controller.scale() * (start_point.x() - _data_mean.x()) + controller.u();
+    ri = controller.scale() * (start_point.y() - _data_mean.y()) + controller.v();
 
-    cf = controller.scale() * end_point.x() + controller.u();
-    rf = controller.scale() * end_point.y() + controller.v();
+    cf = controller.scale() * (end_point.x() - _data_mean.x()) + controller.u();
+    rf = controller.scale() * (end_point.y() - _data_mean.y()) + controller.v();
+
+    Point pi = Point(ci, ri);
+    Point pf = Point(cf, rf);
     
-    cv::line(image(), cv::Point(ci,ri), cv::Point(cf,rf), color);
+    cv::line(image(), pi, pf, color);
 }
 
 void Drawer::drawPoint(Eigen::Vector2d& point, DrawerController& controller, Scalar& color){
@@ -219,8 +249,8 @@ void Drawer::drawPoint(Eigen::Vector2d& point, DrawerController& controller, Sca
     // int radius = 1 * controller.scale();
     int radius = 1;
 
-    c = controller.scale() * point.x() + controller.u();
-    r = controller.scale() * point.y() + controller.v();
+    c = controller.scale() * (point.x() - _data_mean.x()) + controller.u();
+    r = controller.scale() * (point.y() - _data_mean.y()) + controller.v();
     
     if (isOutsideImage(c, r)) return; // point outside the image
 
@@ -231,8 +261,8 @@ void Drawer::drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scala
     double ri, ci, rf, cf;
     
     double theta = pose.z();
-    ci = controller.scale() * pose.x() + controller.u();
-    ri = controller.scale() * pose.y() + controller.v();
+    ci = controller.scale() * (pose.x() - _data_mean.x()) + controller.u();
+    ri = controller.scale() * (pose.y() - _data_mean.y()) + controller.v();
     
     // int radius = 3 * controller.scale();
     int radius = 3;

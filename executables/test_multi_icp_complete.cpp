@@ -103,20 +103,6 @@ int main (int argc, char** argv) {
     cout << endl;
 
     
-    int width = 1000;
-    int height = 1000;
-    Drawer drawer(width, height, "test_multi_icp_solver");
-    // DrawerController drawer_controller(5.0, 5.0, 0.5);
-    DrawerController drawer_controller(height/4, width/4, 5.0, 5.0, 5.0, 5.0);
-    
-    Scalar blue(255, 0, 0);
-    Scalar red(0, 0, 255);
-    Scalar green(0, 255, 0);
-    Scalar pink(255, 0, 255);
-    Scalar black(0, 0, 0);
-    Scalar white(255, 255, 255);
-    
-    
     Dataset dataset(dataset_filename);
 
     vector<vector<MapPoint>> map;
@@ -128,7 +114,7 @@ int main (int argc, char** argv) {
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records);
+    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.1);
 
 
     // for(auto pose : poses) cout << pose << endl << endl;
@@ -200,7 +186,7 @@ int main (int argc, char** argv) {
         MapPoint& map_point = map[pose_index][point_index];
 
         vector<pair<double, int>> point_neighbors;
-        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.05, point_neighbors))
+        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.1, point_neighbors))
         // if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 20, point_neighbors))
         {
           if (point_neighbors.size() < (size_t) min_local_correspondences) continue;
@@ -305,6 +291,28 @@ int main (int argc, char** argv) {
     IntPairVector poses_correspondences;
     
 
+    // init drawer
+
+    int width = 1000;
+    int height = 1000;
+    Drawer drawer(width, height, "test_multi_icp_solver"); // drawer
+    drawer.init(poses, points); // compute data distribution for drawing purpose
+
+    // DrawerController drawer_controller(5.0, 5.0, 0.5);
+
+    double h = height / 2 + drawer.mean_data().x();
+    double w = width / 2 + drawer.mean_data().y();
+    double s = 1.0;
+    
+    DrawerController drawer_controller(h, w, s, 5.0, 5.0, 5.0);
+    
+    Scalar blue(255, 0, 0);
+    Scalar red(0, 0, 255);
+    Scalar green(0, 255, 0);
+    Scalar pink(255, 0, 255);
+    Scalar black(0, 0, 0);
+    Scalar white(255, 255, 255);
+    
     bool drawing_poses = true;
     bool drawing_points = true;
     bool drawing_normals = false;
@@ -438,7 +446,7 @@ int main (int argc, char** argv) {
           {
             IntVector pose_neighbors;
 
-            if (!finder.find_pose_neighbors(pose_index, 0.5, pose_neighbors, poses_kdtree_dim)) continue;
+            if (!finder.find_pose_neighbors(pose_index, 30, pose_neighbors, poses_kdtree_dim)) continue;
 
             for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
             {
@@ -495,6 +503,17 @@ int main (int argc, char** argv) {
 
               if (min_distance != DBL_MAX)
               {
+
+                Vector3d pose_src = poses[get<0>(src)];
+                Vector3d pose_dst = poses[get<0>(dst)];
+                
+                // rotate the normals using the correspondence poses
+                Vector2d n_src = v2t(pose_src).rotation() * normals[get<2>(src)];
+                Vector2d n_dst = v2t(pose_dst).rotation() * normals[get<2>(dst)];
+                
+                double angle_between_normals = n_src.dot(n_dst);
+                if (angle_between_normals < 0.8) continue;
+                
                 // cout << "min_distance " << min_distance << endl;
                 pose_point_normal_correspondences.push_back(TriplePair(src, dst));
                 map_src_point.set_global_correspondences_index(pose_point_normal_correspondences.size() - 1, 1);
