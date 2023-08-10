@@ -274,11 +274,9 @@ bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep
   Eigen::SparseMatrix<double> _H_sparse(state_size*3, state_size*3);
 
   // damping
-  for (size_t i = 0; i < state_size * 3; i++)
-  {
-    coefficients.push_back(Eigen::Triplet<double>(i, i, _damping));
-  }
+  for (size_t i = 0; i < state_size * 3; i++) coefficients.push_back(Eigen::Triplet<double>(i, i, _damping));
   
+  // build sparse system using saved triplets
   _H_sparse.setFromTriplets(coefficients.begin(), coefficients.end());
 
   // cout << _H_sparse << endl << endl << endl;
