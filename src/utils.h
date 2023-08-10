@@ -3,30 +3,31 @@
 bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle);
 bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &normal);
 
+bool read_configuration(
+    int argc, char** argv,
+    string &dataset_filename,
+    int &dataset_from_record_number,
+    int &dataset_num_records,
+    int &points_kdtree_dim,
+    int &poses_kdtree_dim,
+    int &min_poses_correspondences,
+    int &min_local_correspondences,
+    double &kernel_threshold,
+    double &damping,
+    bool &keep_outliers
+);
+    
 
+void print_configuration(
+    string& dataset_filename,
+    int& dataset_from_record_number,
+    int& dataset_num_records,
+    int& points_kdtree_dim,
+    int& poses_kdtree_dim,
+    int& min_poses_correspondences,
+    int& min_local_correspondences,
+    double& kernel_threshold,
+    double& damping,
+    bool& keep_outliers
 
-
-enum ARGS_LABEL{
-    DATASET_PATH_LABEL,
-    POINTS_KDTREE_DIM_LABEL,
-    POSES_KDTREE_DIM_LABEL
-};
-
-enum ARGS_DEFAULT{
-    DATASET_PATH_DEFAULT,
-    POINTS_KDTREE_DIM_DEFAULT,
-    POSES_KDTREE_DIM_DEFAULT
-};
-
-
-// class ARGS{
-//     public:
-//         args
-// }
-
-// class CONFIG {
-//     public:
-//         inline static const string DATASET_PATH = "/home/leonardo/multi_icp/dataset/dataset_test.txt";
-//         inline static const int POINTS_KDTREE_DIM = 2;
-//         inline static const int POSES_KDTREE_DIM = 2;
-// };
+);

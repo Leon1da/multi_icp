@@ -257,6 +257,7 @@ namespace kdt
 					Vector2d pos = diff.block(0, 0, 2, 1);
 					Vector2d vec = diff.block(2, 0, 2, 1);
 
+					// double norm = (1-alpha)*(1-alpha)*pos.norm() + alpha*alpha*vec.norm();
 					double norm = sqrt((1-alpha)*(pow(pos.x(), 2) + pow(pos.y(), 2)) + alpha * (pow(vec.x(), 2) + pow(vec.y(), 2)));
 					return norm;
 
