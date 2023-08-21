@@ -1,3 +1,4 @@
 build/
 src/multi_icp.code-workspace
 .vscode/settings.json
+.vscode/c_cpp_properties.json

@@ -8,7 +8,6 @@
 #include <queue>
 #include <limits.h>
 #include <string_view>
-
 #include <charconv>
 
 #include <Eigen/Eigenvalues> 
@@ -17,6 +16,9 @@
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
 #include <Eigen/Sparse>
+#include <Eigen/CholmodSupport>
+
+#include "cs.h"
 
 #include "opencv2/opencv.hpp"
 
@@ -141,8 +143,8 @@ inline Eigen::Isometry2d v2t(const Eigen::Vector3d& t){
     Eigen::Isometry2d T;
     T.setIdentity();
     T.translation()=t.head<2>();
-    float c = cos(t(2));
-    float s = sin(t(2));
+    double c = cos(t(2));
+    double s = sin(t(2));
     T.linear() << c, -s, s, c;
     return T;
 }

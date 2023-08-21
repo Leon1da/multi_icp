@@ -41,7 +41,6 @@ int main (int argc, char** argv) {
 
     
 
-    
     Dataset dataset(dataset_filename);
 
     vector<vector<MapPoint>> map;
@@ -125,8 +124,7 @@ int main (int argc, char** argv) {
         MapPoint& map_point = map[pose_index][point_index];
 
         vector<pair<double, int>> point_neighbors;
-        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.1, point_neighbors))
-        // if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 20, point_neighbors))
+        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.3, point_neighbors))
         {
           if (point_neighbors.size() < (size_t) min_local_correspondences) continue;
           IntVector indices;
@@ -149,20 +147,14 @@ int main (int argc, char** argv) {
           //   normals.push_back(normal);
           //   map_point.set_normal_index(normals.size() - 1);
 
-          // }
-          
-           
+          // } 
         }
-
-      
       }
-      
     }
     
     cout << normals.size() << " normals have been estimated." << endl;
     
     cout << "Estimating surface normals complete." << endl;
-
     
     vector<IntVector> index_map;
     if (points_kdtree_dim == 4)
@@ -179,7 +171,6 @@ int main (int argc, char** argv) {
         for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
         {
           MapPoint map_point = map[pose_index][point_index];
-
           // points without normals will be no more considered
           if (map_point.has_normal())
           {
@@ -385,7 +376,8 @@ int main (int argc, char** argv) {
           {
             IntVector pose_neighbors;
 
-            if (!finder.find_pose_neighbors(pose_index, 30, pose_neighbors, poses_kdtree_dim)) continue;
+            if (!finder.find_pose_neighbors(pose_index, 4.0, pose_neighbors, poses_kdtree_dim)) continue;
+            // if (!finder.find_pose_neighbors(pose_index, 30, pose_neighbors, poses_kdtree_dim)) continue;
 
             for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
             {
@@ -407,11 +399,11 @@ int main (int argc, char** argv) {
                   switch (points_kdtree_dim)
                   {
                     case 2:
-                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 0.1);
+                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 0.3);
                       // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), point_neighbor, 1);
                       break;
                     case 4:
-                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 0.05);
+                      point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 0.3);
                       // point_neighbor_exist = finder.find_point_neighbor(tree_index, map_src_point.pose_index(), map_src_point.point_index(), map_src_point.normal_index(), point_neighbor, 1);
                       point_neighbor.second = index_map[tree_index][point_neighbor.second]; // IMPORTANT
                       break;

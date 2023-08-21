@@ -281,13 +281,17 @@ bool MultiICPSolver::oneRound(const TriplePairVector& correspondences, bool keep
 
   // cout << _H_sparse << endl << endl << endl;
 
-  Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> chol(_H_sparse);       // performs a Cholesky factorization of A
-  dx = chol.solve(-_b);                                                         // use the factorization to solve for the given right hand side
+  // Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> solver(_H_sparse);       // performs a Cholesky factorization of A
+  // dx = solver.solve(-_b);                                                         // use the factorization to solve for the given right hand side
   // cout << dx << endl << endl;
 
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
-  ldlt.compute(_H_sparse);
-  dx = ldlt.solve(-_b);
+  // Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver(_H_sparse);
+  // dx = solver.solve(-_b);
+  // cout << dx << endl << endl;
+
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> solver(_H_sparse);
+  dx = solver.solve(-_b);
+  // cout << dx << endl << endl;
 
   
   
