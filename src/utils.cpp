@@ -28,7 +28,6 @@ bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle){
 
     // cout << "Mean vector: " << endl << mean << endl;
 
-
     float num = 0, den = 0;
 
     for (size_t index = 0; index < num_points; index++)
@@ -49,115 +48,68 @@ bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle){
 
 }
 
+template <typename SquareMatrixType_>
+Eigen::Matrix<typename SquareMatrixType_::Scalar, SquareMatrixType_::RowsAtCompileTime, 1>
+smallestEigenVector(const SquareMatrixType_& m) {
+  Eigen::SelfAdjointEigenSolver<SquareMatrixType_> es;
+  es.compute(m);
+  return es.eigenvectors().col(0);
+}
+
 
 // normal of line fitting point cloud
 bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &normal){
 
-    size_t num_points = indices.size();
-
-    // Center the data
-
-    // - compute mean
-    Vector2d mean(0, 0);
-    for (size_t point_index = 0; point_index < num_points; point_index++)
-    {
-        mean = mean + points[indices[point_index]];
-    }
-    mean = mean / num_points;
-
-    // cout << endl << mean << endl;
-
-    // - subtract mean from each point
-    Eigen::Matrix2Xd data(2, num_points);
-    for (size_t point_index = 0; point_index < num_points; point_index++)
-    {
-        data.block(0, point_index, 2, 1) = points[indices[point_index]] - mean;
-
-    } 
-
-    // cout << endl << data << endl;
-
-    // Calculate the covariance matrix
-
-    Matrix2d covariance;
-    covariance.setZero();
-
-    for (size_t point_index = 0; point_index < num_points; point_index++)
-    {
-        covariance = covariance + (data.block(0, point_index, 2, 1) - mean) * (data.block(0, point_index, 2, 1) - mean).transpose();
-    }
+        size_t n = indices.size();
     
-    // Calculate the covariance eigen values and eigen vectors
+        Vector2d mean;
+        Matrix2d cov;
+        mean.setZero();
+        cov.setZero();
 
-    // Eigen decomposition
-    Eigen::EigenSolver<Eigen::Matrix2d> evd(covariance);
-    float lambda1, lambda2;
-    lambda1 = evd.eigenvalues().x().real();
-    lambda2 = evd.eigenvalues().y().real();
-    Vector2d v1, v2;
-    v1 = evd.eigenvectors().col(0).real();
-    v2 = evd.eigenvectors().col(1).real();
+        for (size_t i = 0; i < n; i++)
+        {
+            Vector2d p = points[indices[i]];
+            mean += p;
+            cov += p * p.transpose();
+        }
 
-    if (lambda1 < lambda2) normal = v1;
-    else normal = v2;
-
-    // normal = normal + mean;
-
-    
-    // cout << "EIGEN " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
-    // Svd decomposition
-    // int setting = Eigen::ComputeThinU | Eigen::ComputeThinV;
-    int setting = Eigen::ComputeFullU | Eigen::ComputeFullV;
-    Eigen::JacobiSVD<Eigen::Matrix2d> svd = covariance.jacobiSvd(setting);
-
-    Eigen::Matrix2d U = svd.matrixU();
-    normal = Eigen::Vector2d(U.col(1));
-
-    Eigen::Matrix2d V = svd.matrixV();
-    normal = Eigen::Vector2d(V.col(1));
-
-    // normal = normal / normal.norm();
-    
-    
-    // cout << "SVD " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
+        mean *= (1./n);
+        cov *= (1./n);
+        cov -= mean * mean.transpose();
+        cov *= n/(n-1);
+        
+        normal = smallestEigenVector(cov);
     
     return true;
 
 }
 
-
-    // Matrix2f covariance;
-    // compute_covariance(points, points_cloud_indices, covariance);
+bool estimate_normal(vector<Vector2d*> points, Vector2d &normal){
+        size_t n = points.size();
     
-    // int setting = Eigen::ComputeThinU | Eigen::ComputeThinV;
-    // Eigen::JacobiSVD<Eigen::Matrix2f> svd = covariance.jacobiSvd(setting);
+        Vector2d mean;
+        Matrix2d cov;
+        mean.setZero();
+        cov.setZero();
 
-    // Eigen::Matrix2f U = svd.matrixU();
-    // normal = Eigen::Vector2f(U.col(1).x(), U.col(1).y());
+        for (size_t i = 0; i < n; i++)
+        {
+            Vector2d p = *points[i];
+            mean += p;
+            cov += p * p.transpose();
+        }
 
-    // // Eigen::Matrix2f V = svd.matrixV();
-    // // normal = Eigen::Vector2f(V.col(1).x(), V.col(1).y());
-
-    // normal = normal / normal.norm();
+        mean *= (1./n);
+        cov *= (1./n);
+        cov -= mean * mean.transpose();
+        cov *= n/(n-1);
+        
+        normal = smallestEigenVector(cov);
     
-    // cout << "normal svd " << normal << endl;
+    return true;
 
-    // Eigen::EigenSolver<Eigen::Matrix2f> evd(covariance);
-    // float lambda1, lambda2;
-    // lambda1 = evd.eigenvalues().x().real();
-    // lambda2 = evd.eigenvalues().y().real();
-    // Eigen::Vector2f v1, v2;
-    // v1 = evd.eigenvectors().col(0).real();
-    // v2 = evd.eigenvectors().col(1).real();
-
-    // if (lambda1 < lambda2) normal = v1;
-    // else normal = v2;
-
-    // cout << "normal evd " << normal << endl;
-    
-
-    // return true;
-
+}
 
 
 
@@ -186,8 +138,8 @@ bool read_configuration(
     // finder options
     auto points_kdtree_dim_option = op.add<Value<int>>("z", "points_kdtree_dim", "[FINDER] Dimension of the kdtrees containing the points (2 or 4)", 2, &points_kdtree_dim);
     auto poses_kdtree_dim_option = op.add<Value<int>>("y", "poses_kdtree_dim", "[FINDER] Dimension of the kdtrees containing the poses (2 or 4)", 2, &poses_kdtree_dim);
-    auto min_poses_correspondences_option = op.add<Value<int>>("c", "min_poses_corr", "[FINDER] Minimum number of correspondences betewenn two poses", 0, &min_poses_correspondences);
-    auto min_local_correspondences_option = op.add<Value<int>>("e", "min_local_corr", "[FINDER] Minimum number of point correspondences needed to provide a good estimation of the normal", 0, &min_local_correspondences);
+    auto min_poses_correspondences_option = op.add<Value<int>>("c", "min_poses_corr", "[FINDER] Minimum number of correspondences betewenn two poses", 1, &min_poses_correspondences);
+    auto min_local_correspondences_option = op.add<Value<int>>("e", "min_local_corr", "[FINDER] Minimum number of point correspondences needed to provide a good estimation of the normal", 2, &min_local_correspondences);
 
     // auto pose_finder_r_option = op.add<Value<double>>("k", "k", "[FINDER] kernel threshold", 2, &kernel_threshold);
     // auto pose_finder_k_option = op.add<Value<int>>("k", "k", "[FINDER] kernel threshold", 2, &kernel_threshold);

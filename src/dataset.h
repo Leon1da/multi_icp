@@ -46,7 +46,7 @@ class Dataset{
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();        
-        void load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold=DBL_MIN);
+        void load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold=DBL_MIN, double min_point_distance_threshold = DBL_MIN);
 
     
 };

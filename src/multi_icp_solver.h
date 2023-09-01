@@ -4,19 +4,29 @@
     
     private:
 
-      bool errorAndJacobian(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
+      bool compute_error_and_jacobians(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
 
-      void linearize(const TriplePairVector& correspondences, bool keep_outliers, vector<Eigen::Triplet<double>>& coefficients);
+      void linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>>& coefficients, bool keep_outliers);
 
-      Isometry2dVector* _state;                   //< this will hold our state
+      void KahanMatrixSummation(Eigen::Matrix3d& sum, Eigen::Matrix3d& error, Eigen::Matrix3d& value);
+
+      void KahanSummation(double &sum, double &error, double &value);
+      
+
       double _kernel_thereshold;                   //< threshold for the kernel
       double _damping;                             //< damping, to slow the solution
       int _min_num_inliers;                       //< if less inliers than this value, the solver stops
+      
       const Vector3dVector* _poses;
       const Vector2dVector* _points;      
-      const Vector2dVector* _normals;      
-      Eigen::MatrixXf _H;
+      const Vector2dVector* _normals;  
+      
+      Eigen::VectorXd* _state;
+      
+      size_t _state_dim;
       Eigen::VectorXf _b;
+      
+      
       double _chi_inliers;
       double _chi_outliers;
       int _num_inliers;
@@ -32,7 +42,8 @@
       //! @param state: the state
       //! @param poses: the poses of the world
       //! @param points: the points of the world
-      void init(Isometry2dVector& state,
+      void init(
+          Eigen::VectorXd& state,     
           const Vector3dVector& poses,
           const Vector2dVector& points, 
           const Vector2dVector& normals,
@@ -48,7 +59,7 @@
 
     
       //! accessor to the state
-      Isometry2dVector* state() {return _state;}
+      Eigen::VectorXd* state() {return _state;}
 
       //! chi square of the "good" points
       const double chiInliers() const {return _chi_inliers;}
@@ -66,7 +77,7 @@
       //! @param correspondences: the correspondences (first: measurement, second:model);
       //! param keep_outliers: if true, the outliers are considered in the optimization 
       //! (but cut by the kernel)
-      bool oneRound(const TriplePairVector& correspondences, bool keep_outliers);
+      bool oneRound(const vector<TriplePairVector>& correspondences, bool keep_outliers);
 
 };
 

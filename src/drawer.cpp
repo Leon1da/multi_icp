@@ -143,6 +143,9 @@ class Drawer
         void drawPoint(Eigen::Vector2d& point, DrawerController& controller, Scalar& color);
         
         void drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scalar& color);
+
+        
+        void plotFillinMatrix(Eigen::MatrixXi fillin, Scalar& color);
         
         bool isOutsideImage(Eigen::Vector2f& point);
         bool isOutsideImage(float x, float y);
@@ -275,5 +278,28 @@ void Drawer::drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scala
     cv::circle(image(), cv::Point(ci,ri), radius, color);
 
 
+}
+
+void Drawer::plotFillinMatrix(Eigen::MatrixXi fillin, Scalar& color){
+    size_t total_blocks = 0, filled_blocks = 0;
+    float scalex = float (width()) / fillin.rows();
+    float scaley = float (height()) / fillin.cols();
+    
+    for (size_t i = 0; i < fillin.rows(); i++)      
+    {
+        for (size_t j = 0; j < fillin.cols(); j++)
+        {
+            int value = fillin(i, j);
+            if (!value) continue;            
+            int c = (int) 255 - (255 * value / 1080);
+            cv::rectangle(image(), Point(i*scalex, j*scaley), Point(i*scalex + scalex, j*scaley + scaley), Scalar(c, c, c), FILLED);
+            filled_blocks+=1;
+        }
+        
+    }
+
+
+    cout << "[filled blocks / total blocks] " << filled_blocks << " / " << fillin.rows() * fillin.cols() << endl;
+    
 }
 

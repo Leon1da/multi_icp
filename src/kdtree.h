@@ -136,13 +136,7 @@ namespace kdt
 			*/
 			void radiusSearch(const Eigen::VectorXd& query, double radius, vector<pair<double, int>>& out) const
 			{
-				// std::vector<int> indices;
-				// radiusSearchRecursive(query, root_, indices, radius);
-				int max_size = 10;
-				KnnQueue queue(max_size);
-				radiusSearchRecursive(query, root_, queue, radius);
-				
-				for (size_t i = 0; i < queue.size(); i++) out.push_back(queue[i]);
+				radiusSearchRecursive(query, root_, out, radius);
 			}
 
 
@@ -341,8 +335,7 @@ namespace kdt
 			*/
 
 		
-			// void radiusSearchRecursive(const Eigen::Vector2d& query, const Node* node, std::vector<int>& indices, double radius) const
-			void radiusSearchRecursive(const Eigen::VectorXd& query, const Node* node, KnnQueue& queue, double radius) const
+			void radiusSearchRecursive(const Eigen::Vector2d& query, const Node* node, std::vector<std::pair<double, int>>& out, double radius) const
 			{
 				if (node == nullptr)
 					return;
@@ -351,15 +344,15 @@ namespace kdt
 
 				const double dist = distance(query, train, dim_);
 				if (dist < radius)
-					queue.push(std::make_pair(dist, node->idx));
+					out.push_back(std::make_pair(dist, node->idx));
 
 				const int axis = node->axis;
 				const int dir = query[axis] < train[axis] ? 0 : 1;
-				radiusSearchRecursive(query, node->next[dir], queue, radius);
+				radiusSearchRecursive(query, node->next[dir], out, radius);
 
 				const double diff = fabs(query[axis] - train[axis]);
 				if (diff < radius)
-					radiusSearchRecursive(query, node->next[!dir], queue, radius);
+					radiusSearchRecursive(query, node->next[!dir], out, radius);
 			}
 
 			Node* root_;                //!< root node

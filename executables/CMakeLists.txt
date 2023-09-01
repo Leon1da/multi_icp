@@ -7,7 +7,27 @@ add_executable(test_multi_icp_complete test_multi_icp_complete.cpp
     ../src/multi_icp_solver.cpp
 )
 
-target_link_libraries(test_multi_icp_complete opencv_highgui)
+target_link_libraries(test_multi_icp_complete opencv_highgui cholmod)
+
+add_executable(test_gnuplot test_gnuplot.cpp
+    ../src/dataset.cpp
+    ../src/drawer.cpp
+    ../src/utils.cpp
+    ../src/multi_icp_solver.cpp
+)
+
+target_link_libraries(test_gnuplot opencv_highgui cholmod)
+
+
+add_executable(test_multi_icp_covariance_kdtree test_multi_icp_covariance_kdtree.cpp
+    ../src/dataset.cpp
+    ../src/drawer.cpp
+    ../src/utils.cpp
+    ../src/multi_icp_solver.cpp
+    
+)
+
+target_link_libraries(test_multi_icp_covariance_kdtree opencv_highgui cholmod)
 
 
 # add_executable(test_dataset_reader test_dataset_reader.cpp

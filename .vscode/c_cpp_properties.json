@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/eigen3",
+                "/usr/include/opencv4",
+                "/usr/include/suitesparse"
+            ],
+            "defines": []
+        }
+    ],
+    "version": 4
+}

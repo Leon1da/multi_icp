@@ -1,12 +1,10 @@
 #include "defs.h"
 
 #include "dataset.h"
-#include "kdtree.h"
 #include "utils.h"
-#include "multi_icp_solver.h"
-
 #include "drawer.h"
-
+#include "multi_icp_solver.h"
+#include "eigen_kdtree.h"
 
 
 int main (int argc, char** argv) {
@@ -38,7 +36,6 @@ int main (int argc, char** argv) {
     print_configuration(dataset_filename, dataset_from_record_number, dataset_num_records,
       points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences,
       kernel_threshold, damping, keep_outliers);
-
     
     Dataset dataset(dataset_filename);
 
@@ -47,13 +44,14 @@ int main (int argc, char** argv) {
     Vector2dVector points;
     Vector3dVector poses;
     Vector3dVector sensor_poses;
+
     
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.3, 0.1);
-    // dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.1, 0.02);
+    // dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.1);
     // dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, DBL_MIN, DBL_MIN);
-
+    dataset.load_data(poses, sensor_poses, points, map, dataset_from_record_number, dataset_num_records, 0.3, 0.1);
+    
 
     size_t num_poses = poses.size();
     size_t num_points = points.size();
@@ -61,6 +59,12 @@ int main (int argc, char** argv) {
     cout << num_poses << " poses have been loaded." << endl;
     cout << num_points << " points have been loaded." << endl;
 
+    // apply sensor offset to pose (it is a semplification not strictly needed).
+    for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
+    {
+        poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));
+    }
+    
 
     cout << "Loading data complete." << endl << endl;
 
@@ -90,11 +94,13 @@ int main (int argc, char** argv) {
     cout << "Data mean: " << data_mean.transpose() << endl;
     cout << "Data covariance: " << endl << data_covariance << endl;
 
+
     
     // apply sensor offset to pose (it is a semplification not strictly needed).
     for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
     {
         poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));  // aply sensor offset
+        // poses[pose_index].block(0, 0, 2, 1) += data_mean; // apply standardization
         poses[pose_index].block(0, 0, 2, 1) -= data_mean; // apply standardization
         // poses[pose_index].block(0, 0, 1, 1) /= data_covariance(0, 0); // apply standardization
         // poses[pose_index].block(1, 0, 1, 1) /= data_covariance(1, 1); // apply standardization
@@ -134,46 +140,54 @@ int main (int argc, char** argv) {
     poses_file.close();
 
     cout << "Writing on file terminated" << endl;
-    
-    cout << "Loading correspondence finder." << endl;
+   
 
-    kdt::CorrespondenceFinder finder;
+    using PointType = Vector2d;
+    using ContainerType = Vector2dVector;
     
-    finder.init(poses, points);
-
-    switch (poses_kdtree_dim)
+    using TreeNodeType = TreeNode_<ContainerType::iterator>;
+    using AnswerType = TreeNodeType::AnswerType;
+    
+    cout << "Loading poses kdtree." << endl;
+    
+    ContainerType poses_container;
+    IntVector poses_indices;
+    for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
-      case 2:
-        cout << "Loading poses 2dtree.." << endl;
-        finder.load_poses_2dtree();
-        break;
-      case 4:
-        cout << "Loading poses 4dtree.." << endl;
-        finder.load_poses_4dtree();
-        break;
-      default:
-        cout << "Error during load poses kdtree, supported kdtree dimension is 2 or 4." << endl;
-        throw runtime_error("Not implemented exception");
-        
+        poses_container.push_back(poses[pose_index].block(0, 0, 2, 1)); 
+        poses_indices.push_back(pose_index);
+   
     }
- 
-    cout << "Loading points 2dtree.." << endl;
+    
+
+    TreeNodeType kdtree_poses(poses_container.begin(), poses_container.end(), poses_indices.begin(), poses_indices.end(), 5);
+
+    cout << "Loading poses kdtree ok." << endl;
+
+    cout << "Loading points kdtree.." << endl;
+
+    vector<TreeNodeType> kdtree_points_vector;
+
+    vector<ContainerType> points_container_vector;
+    vector<IntVector> points_indices_vector;
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
       IntVector points_indices;
+      ContainerType points_container;
       for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
       {
-        MapPoint map_point = map[pose_index][point_index];
-        points_indices.push_back(map_point.point_index());
+        points_container.push_back(points[map[pose_index][point_index].point_index()]);
+        points_indices.push_back(point_index);
       }
-      
-      // loading kdtree
-      finder.load_points_2dtree(pose_index, points_indices);
 
+      points_container_vector.push_back(points_container);
+      points_indices_vector.push_back(points_indices);
+
+      TreeNodeType kdtree_points(points_container_vector[pose_index].begin(), points_container_vector[pose_index].end(), points_indices_vector[pose_index].begin(), points_indices_vector[pose_index].end(), 5);
+      kdtree_points_vector.push_back(move(kdtree_points));
     }
-    
-    cout << "Loading correspondence finder complete." << endl << endl;
-    
+
+    cout << "Loading points kdtree ok." << endl;
 
     cout << "Estimating surface normals.." << endl;
     
@@ -185,16 +199,18 @@ int main (int argc, char** argv) {
       {
         MapPoint& map_point = map[pose_index][point_index];
 
-        vector<pair<double, int>> point_neighbors;
-        if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 0.3, point_neighbors))
-        // if (finder.find_point_neighbors(pose_index, map_point.pose_index(), map_point.point_index(), 10, point_neighbors))
-        {
-          if (point_neighbors.size() < (size_t) min_local_correspondences) continue;
-          IntVector indices;
-          for (size_t i = 0; i < point_neighbors.size(); i++){
-            MapPoint p = map[pose_index][point_neighbors[i].second];
-            indices.push_back(p.point_index());
-          } 
+        PointType query_point = points[map_point.point_index()];
+        AnswerType point_neighbors;
+        kdtree_points_vector[pose_index].fullSearch(point_neighbors, query_point, 0.3);
+
+        if (point_neighbors.size() < (size_t) min_local_correspondences) continue;
+
+        IntVector indices;
+        for (size_t n = 0; n < point_neighbors.size(); n++){
+          int neighbor_index = points_indices_vector[pose_index][point_neighbors[n] - &points_container_vector[pose_index][0]];
+          MapPoint p = map[pose_index][neighbor_index];
+          indices.push_back(p.point_index());
+        } 
 
           // double normal_vector_angle;
           // if (estimate_normal(points, indices, normal_vector_angle)) {
@@ -212,15 +228,14 @@ int main (int argc, char** argv) {
 
           }
           
-        }
+        
       }
     }
     
     cout << normals.size() << " normals have been estimated." << endl;
     
     cout << "Estimating surface normals complete." << endl;
- 
-    
+
     cout << "Init Multi ICP Solver.." << endl;
     
     MultiICPSolver solver;
@@ -246,20 +261,27 @@ int main (int argc, char** argv) {
         cout << "Updating global correspondences." << endl;
         
         correspondences.clear();
-
         poses_correspondences.clear();
-
         fill_in.setZero();
 
         for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
         { 
-          IntVector pose_neighbors;
-          if (!finder.find_pose_neighbors(pose_index, 4.0, pose_neighbors)) continue;
-          // if (!finder.find_pose_neighbors(pose_index, 5, pose_neighbors)) continue;
 
+          TreeNodeType::AnswerType pose_neighbors;
+          Vector2d query_pose = poses[pose_index].block(0, 0, 2, 1);
+          kdtree_poses.fullSearch(pose_neighbors, query_pose, 4.0);
+          
+          size_t num_pose_neighbors = pose_neighbors.size();
+          IntVector pose_neighbors_indices(num_pose_neighbors);
+          for (size_t npose = 0; npose < num_pose_neighbors; npose++)
+          {
+            int index = poses_indices[pose_neighbors[npose] - &poses_container[0]];
+            pose_neighbors_indices[npose] = index;
+          }
+          
           for (size_t index = 0; index < pose_neighbors.size(); index++)
           {
-            int pose_neighbor_index = pose_neighbors[index];
+            int pose_neighbor_index = pose_neighbors_indices[index];
             TriplePairVector pose_pose_correspondences;
             
             // if (pose_index >= pose_neighbor_index) continue;
@@ -278,11 +300,14 @@ int main (int argc, char** argv) {
             {
               MapPoint map_point = map[pose_index][point_index];
               if (!map_point.has_normal()) continue;
-              
-              pair<double, int> point_global_neighbor;
-              if (!finder.find_point_neighbor(pose_neighbor_index, map_point.pose_index(), map_point.point_index(), point_global_neighbor, 0.3)) continue;
 
-              MapPoint map_neighbor_point = map[pose_neighbor_index][point_global_neighbor.second];
+              
+              Vector2d query_point = v2t(poses[pose_neighbor_index]).inverse() * v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+              Vector2d* neighbor_point = kdtree_points_vector[pose_neighbor_index].bestMatchFull(query_point, 0.3);
+              if (!neighbor_point) continue;
+              int neighbor_point_index = points_indices_vector[pose_neighbor_index][neighbor_point - &points_container_vector[pose_neighbor_index][0]];
+              
+              MapPoint map_neighbor_point = map[pose_neighbor_index][neighbor_point_index];
               if (!map_neighbor_point.has_normal()) continue;
 
               Vector2d point_normal = v2t(poses[map_point.pose_index()]).rotation() * normals[map_point.normal_index()];
@@ -300,7 +325,6 @@ int main (int argc, char** argv) {
             // size_t num_pose_pose_correspondences = pose_pose_correspondences.size() / 2;
             size_t num_pose_pose_correspondences = pose_pose_correspondences.size();
             if (num_pose_pose_correspondences < min_poses_correspondences) continue;
-
             fill_in(pose_index, pose_neighbor_index) = num_pose_pose_correspondences;
             // fill_in(pose_neighbor_index, pose_index) = num_pose_pose_correspondences;
             
@@ -314,6 +338,7 @@ int main (int argc, char** argv) {
           
         }
                   
+        
         // cout << num_correspondences << endl;
         cout << "Updating global correspondences ok." << endl;
         cout << "ok." << endl << endl;
@@ -323,6 +348,7 @@ int main (int argc, char** argv) {
         cout << "# Multi-ICP optimization .." << endl;
         solver.oneRound(correspondences, keep_outliers);
         cout << "# inliers: " << solver.numInliers() << " ( error: " << solver.chiInliers()<< " )" << " outliers: " << solver.numOutliers() << " ( error: " << solver.chiOutliers() << " ). " << endl;
+        
         
         // cout << state << endl;
 
@@ -335,7 +361,6 @@ int main (int argc, char** argv) {
           poses[pose_index] = t2v(v2t(pert) * v2t(pose));
           // poses[pose_index] = t2v(v2t(pose) * v2t(pert));
         }
-
         cout << "Writing on file.." << endl;
   
         ofstream points_file, poses_file;
@@ -363,34 +388,27 @@ int main (int argc, char** argv) {
 
         cout << "Writing on file complete." << endl;
   
+        // updating pose kdtree 
+        poses_container.clear();
+        poses_indices.clear();
+        for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
+        {
+            poses_container.push_back(poses[pose_index].block(0, 0, 2, 1)); 
+            poses_indices.push_back(pose_index);
       
+        }
+        
+        TreeNodeType kdtree_poses(poses_container.begin(), poses_container.end(), poses_indices.begin(), poses_indices.end());
+
         cout << "#################################################################" << endl;
         
-        // update poses tree
-        switch (poses_kdtree_dim)
-        {
-          case 2:
-            cout << "Loading poses 2dtree.." << endl;
-            finder.load_poses_2dtree();
-            cout << "ok." << endl;
-            break;
-          case 4:
-            cout << "Loading poses 4dtree.." << endl;
-            finder.load_poses_4dtree();
-            cout << "ok." << endl;
-            break;
-          default:
-            throw runtime_error("Not implemented exception");
-            cout << "Error during load poses kdtree, supported dimensions are 2 and 4." << endl;
-            
-        }
 
         
 
     }
 
+    return 1;
 
-  return 0;
+
+
 }
-    
-    

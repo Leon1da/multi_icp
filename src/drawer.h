@@ -55,6 +55,9 @@ class Drawer{
         void drawPoint(Eigen::Vector2d& point, DrawerController& controller, Scalar& color);
         
         void drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scalar& color);
+
+        void plotFillinMatrix(Eigen::MatrixXi fillin, Scalar& color);
+
         
         bool isOutsideImage(Eigen::Vector2f& point);
         bool isOutsideImage(float x, float y);

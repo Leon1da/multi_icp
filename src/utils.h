@@ -7,6 +7,7 @@ bool estimate_normal(Vector2dVector &points, IntVector& indices, double &angle);
 bool estimate_normal(Vector2dVector &points, IntVector& indices, Vector2d &normal);
 
 
+bool estimate_normal(vector<Vector2d*> points, Vector2d &normal);
 
 
 

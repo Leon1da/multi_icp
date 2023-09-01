@@ -8,6 +8,8 @@
 #include <queue>
 #include <limits.h>
 #include <string_view>
+#include <iomanip>      // std::setprecision
+
 
 #include <charconv>
 
@@ -16,12 +18,15 @@
 #include <Eigen/Geometry>
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
+
 #include <Eigen/Sparse>
+#include <Eigen/CholmodSupport>
 
 #include "opencv2/opencv.hpp"
 
 #include "popl.hpp"
 // #include "utils.h"
+
 
 using namespace std;
 using namespace cv;
@@ -141,8 +146,8 @@ inline Eigen::Isometry2d v2t(const Eigen::Vector3d& t){
     Eigen::Isometry2d T;
     T.setIdentity();
     T.translation()=t.head<2>();
-    float c = cos(t(2));
-    float s = sin(t(2));
+    double c = cos(t(2));
+    double s = sin(t(2));
     T.linear() << c, -s, s, c;
     return T;
 }

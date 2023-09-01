@@ -98,7 +98,7 @@ class Dataset
         DatasetRecord decode_line(string line);
         vector<DatasetRecord> records();
         size_t num_records();
-        void load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold=DBL_MIN);
+        void load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold=DBL_MIN, double min_point_distance_threshold = DBL_MIN);
 
 
 };
@@ -198,7 +198,7 @@ DatasetRecord Dataset::decode_line(string line){
     return record;
 }
 
-void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold){
+void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vector2dVector& points, vector<vector<MapPoint>>& map, size_t from_records, size_t num_records_to_load, double min_pose_distance_threshold, double min_point_distance_threshold){
 
     
     size_t num_poses = num_records();
@@ -266,14 +266,21 @@ void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vec
 
         vector<MapPoint> map_pose;
         
-        float angle = angle_min;
+        int pose_total_points = 0;
+        Vector2d last_point;
+        float angle = angle_min - angle_offset;
         for (size_t beam_index = 0; beam_index < total_beams; beam_index++)
         {   
+            
+            angle = angle + angle_offset;
+            
             float value = values[beam_index];
             // float value = record.values()[beam_index];
 
             Vector2d point;
             point << value * cos(angle), value * sin(angle);
+
+            if (pose_total_points && (point - last_point).norm() < min_point_distance_threshold) continue;
             
             if (value > record.range_min() && value < record.range_max()) {
                 points.push_back(point);
@@ -283,11 +290,14 @@ void Dataset::load_data(Vector3dVector& poses, Vector3dVector& sensor_poses, Vec
                 map_point.set_point_index(total_points);
                 map_pose.push_back(map_point);
 
-                total_points++;
+                last_point = point;
 
+                total_points++;
+                pose_total_points++;
+
+                
             }
 
-            angle = angle + angle_offset;
         }
         
         
