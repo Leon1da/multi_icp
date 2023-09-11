@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../robotprogramming_2022_23"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"iostream": "cpp",
+			"complex": "cpp",
+			"deque": "cpp",
+			"string": "cpp",
+			"vector": "cpp",
+			"exception": "cpp",
+			"iterator": "cpp",
+			"functional": "cpp",
+			"iosfwd": "cpp",
+			"istream": "cpp",
+			"new": "cpp",
+			"ostream": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp"
+		}
+	}
+}

@@ -71,6 +71,10 @@ int main (int argc, char** argv) {
     cout << "Computing data mean.." << endl;
     Vector2d data_mean;
     Matrix2d data_covariance;
+
+    Vector2d data_min = Vector2d(DBL_MAX, DBL_MAX);
+    Vector2d data_max = Vector2d(DBL_MIN, DBL_MIN);
+
     data_mean.setZero();
     data_covariance.setZero();
 
@@ -79,9 +83,17 @@ int main (int argc, char** argv) {
       for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
       {
         MapPoint map_point = map[pose_index][point_index];
-        Vector2d world_point = v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
+        Vector2d point = points[map_point.point_index()];
+
+        Vector3d pose = poses[map_point.pose_index()];
+        Vector2d world_point = v2t(pose) * point;
         data_mean += world_point;
         data_covariance += world_point * world_point.transpose();
+
+        if (world_point.x() < data_min.x()) data_min.x() = world_point.x();
+        if (world_point.y() < data_min.y()) data_min.y() = world_point.y();
+        if (world_point.x() > data_max.x()) data_max.x() = world_point.x();
+        if (world_point.y() > data_max.y()) data_max.y() = world_point.y();
 
       }
       
@@ -93,6 +105,9 @@ int main (int argc, char** argv) {
     data_covariance *= num_points/(num_points-1);
     cout << "Data mean: " << data_mean.transpose() << endl;
     cout << "Data covariance: " << endl << data_covariance << endl;
+    cout << endl;
+    cout << "Data min: " << data_min.transpose() << endl;
+    cout << "Data max: " << data_max.transpose() << endl;
 
 
     
@@ -100,10 +115,14 @@ int main (int argc, char** argv) {
     for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
     {
         poses[pose_index] = t2v(v2t(poses[pose_index]) * v2t(sensor_poses[pose_index]));  // aply sensor offset
-        // poses[pose_index].block(0, 0, 2, 1) += data_mean; // apply standardization
-        poses[pose_index].block(0, 0, 2, 1) -= data_mean; // apply standardization
+        // poses[pose_index].block(0, 0, 2, 1) -= data_mean; // apply standardization
         // poses[pose_index].block(0, 0, 1, 1) /= data_covariance(0, 0); // apply standardization
         // poses[pose_index].block(1, 0, 1, 1) /= data_covariance(1, 1); // apply standardization
+        
+        
+        
+        
+
         
     }
     
@@ -121,7 +140,7 @@ int main (int argc, char** argv) {
         {
             
             MapPoint map_point = map[pose_index][point_index];
-
+            
             Vector2d point = points[map_point.point_index()];
             Vector3d pose = poses[map_point.pose_index()];
 
@@ -221,12 +240,11 @@ int main (int argc, char** argv) {
           //   // cout << "classic normal " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
           // }
           
-          Vector2d normal;
-          if (estimate_normal(points, indices, normal)) {
-            normals.push_back(normal);
-            map_point.set_normal_index(normals.size() - 1);
+        Vector2d normal;
+        if (!estimate_normal(points, indices, normal)) continue;
+        normals.push_back(normal);
+        map_point.set_normal_index(normals.size() - 1);
 
-          }
           
         
       }
@@ -305,6 +323,7 @@ int main (int argc, char** argv) {
               Vector2d query_point = v2t(poses[pose_neighbor_index]).inverse() * v2t(poses[map_point.pose_index()]) * points[map_point.point_index()];
               Vector2d* neighbor_point = kdtree_points_vector[pose_neighbor_index].bestMatchFull(query_point, 0.3);
               if (!neighbor_point) continue;
+
               int neighbor_point_index = points_indices_vector[pose_neighbor_index][neighbor_point - &points_container_vector[pose_neighbor_index][0]];
               
               MapPoint map_neighbor_point = map[pose_neighbor_index][neighbor_point_index];
@@ -313,7 +332,9 @@ int main (int argc, char** argv) {
               Vector2d point_normal = v2t(poses[map_point.pose_index()]).rotation() * normals[map_point.normal_index()];
               Vector2d neighbor_point_normal = v2t(poses[map_neighbor_point.pose_index()]).rotation() * normals[map_neighbor_point.normal_index()]; 
               
-              if (point_normal.dot(neighbor_point_normal) < 0.9) continue; // 20 degrees
+              double prod = point_normal.dot(neighbor_point_normal);
+              if (prod < 0.9 ) continue; // 20 degrees
+              
               IntTriple src = IntTriple(map_point.pose_index(), map_point.point_index(), map_point.normal_index());
               IntTriple dst = IntTriple(map_neighbor_point.pose_index(), map_neighbor_point.point_index(), map_neighbor_point.normal_index());
               
@@ -350,17 +371,20 @@ int main (int argc, char** argv) {
         cout << "# inliers: " << solver.numInliers() << " ( error: " << solver.chiInliers()<< " )" << " outliers: " << solver.numOutliers() << " ( error: " << solver.chiOutliers() << " ). " << endl;
         
         
-        // cout << state << endl;
-
         // update poses
         for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
           Vector3d pose = poses[pose_index];
           Vector3d pert = state.segment<3>(pose_index*3);
 
+
           poses[pose_index] = t2v(v2t(pert) * v2t(pose));
           // poses[pose_index] = t2v(v2t(pose) * v2t(pert));
+
+          // cout << v2t(pert).rotation() << endl << endl << v2t(pert).translation().transpose() << endl << endl;
         }
+        
+        
         cout << "Writing on file.." << endl;
   
         ofstream points_file, poses_file;
@@ -375,24 +399,33 @@ int main (int argc, char** argv) {
                 MapPoint map_point = map[pose_index][point_index];
 
                 Vector2d point = points[map_point.point_index()];
-                Vector2d world_point = v2t(poses[map_point.pose_index()]) * point;
-                points_file << world_point.transpose() << endl;
-                poses_file << poses[map_point.pose_index()].block(0, 0, 2, 1).transpose() << endl;
+                Vector3d pose = poses[map_point.pose_index()];
 
-            }
-            
+                // apply normalization
+                Vector2d world_point = v2t(pose) * point;
+                Vector2d world_pose = pose.block(0, 0, 2, 1);
+                
+                points_file << world_point.transpose() << endl;
+                poses_file << world_pose.transpose() << endl;
+
+            }    
         }
+    
         
         points_file.close();
         poses_file.close();
 
         cout << "Writing on file complete." << endl;
-  
+
+        // cout << state << endl;
+
+        
         // updating pose kdtree 
         poses_container.clear();
         poses_indices.clear();
         for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
         {
+            
             poses_container.push_back(poses[pose_index].block(0, 0, 2, 1)); 
             poses_indices.push_back(pose_index);
       
@@ -400,6 +433,7 @@ int main (int argc, char** argv) {
         
         TreeNodeType kdtree_poses(poses_container.begin(), poses_container.end(), poses_indices.begin(), poses_indices.end());
 
+  
         cout << "#################################################################" << endl;
         
 

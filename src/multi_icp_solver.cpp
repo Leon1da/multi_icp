@@ -147,26 +147,38 @@ bool MultiICPSolver::compute_error_and_jacobians(double& error,
     Vector2d pj = (*_points)[ref_point_index];
     Vector2d nj = (*_normals)[ref_normal_index];
 
-    // (Xi*pi - Xj*pj)(Ri*ni - Rj*nj) 
-    // (xi yi thetai xj yj thetaj)
+    // ek_ij = (Xi*pk_i - Xj*pk_j)(Ri*nk_i + Rj*nk_j) 
+    // (x_i y_i theta_i x_j y_j theta_j)
       
     Eigen::Isometry2d Xki = v2t(Xi);
     Eigen::Isometry2d Xkj = v2t(Xj);
+
+    Vector2d ni_w = Xki.rotation()*ni;
+    Vector2d nj_w = Xkj.rotation()*nj;
+
+    Vector2d pi_w = Xki*pi;
+    Vector2d pj_w = Xkj*pj;
+
+
+    Vector2d beta = ni_w + nj_w; // bn1 + an2
     
-    Vector2d alpha = (Xki*pi - Xkj*pj);
-    Vector2d beta = (Xki.rotation()*ni + Xkj.rotation()*nj);
+    Vector2d alpha = Xki*pi - Xkj*pj;
 
     Eigen::Isometry2d dRi = dRz(Xi.z());
     Eigen::Isometry2d dRj = dRz(Xj.z());
 
-    // compute the jacobian of the transformation
-    Ji = Matrix1_3d(beta.x(), beta.y(), beta.dot(dRi * pi) + alpha.dot(dRi * ni));
-    Jj = Matrix1_3d(-beta.x(), -beta.y(), -beta.dot(dRj * pj) - alpha.dot(dRj * nj));
-    // // compute the jacobian of the transformation
-    // Ji = Matrix1_3d(beta.x(), beta.y(), beta.dot(dRi * pi));
-    // Jj = Matrix1_3d(-beta.x(), -beta.y(), -beta.dot(dRj * pj));
 
-    error = alpha.dot(beta);
+    // // compute the jacobian of the transformation
+    // Ji = Matrix1_3d(beta.x(), beta.y(), beta.dot(dRi * pi) + alpha.dot(dRi * ni));
+    // Jj = Matrix1_3d(-beta.x(), -beta.y(), -beta.dot(dRj * pj) + alpha.dot(dRj * nj));
+    
+    // error = alpha.dot(beta);
+    
+    // compute the jacobian of the transformation
+    Ji = Matrix1_3d(beta.x(), beta.y(), pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x());
+    Jj = Matrix1_3d(-beta.x(), -beta.y(), -(pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x()));
+    
+    error = (pi_w - pj_w).dot(beta);
 
     return true;
 }
@@ -267,15 +279,18 @@ void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, 
     {
       for (size_t j = 0; j < 3; j++)
       {
-        coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, cur_pose_index*3+j, Jii.coeff(i, j)));
-        coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, ref_pose_index*3+j, Jij.coeff(i, j)));
-        coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, cur_pose_index*3+j, Jji.coeff(i, j)));
-        coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, ref_pose_index*3+j, Jjj.coeff(i, j)));
+        if (cur_pose_index) coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, cur_pose_index*3+j, Jii.coeff(i, j)));
+        if (cur_pose_index && ref_pose_index)
+        {
+          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, ref_pose_index*3+j, Jij.coeff(i, j)));
+          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, cur_pose_index*3+j, Jji.coeff(i, j)));
+        }
+        if (ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, ref_pose_index*3+j, Jjj.coeff(i, j)));
       }
     }
 
-    _b.block(cur_pose_index*3, 0, 3, 1) += bi;
-    _b.block(ref_pose_index*3, 0, 3, 1) += bj;
+    if(cur_pose_index) _b.block(cur_pose_index*3, 0, 3, 1) += bi;  
+    if(ref_pose_index) _b.block(ref_pose_index*3, 0, 3, 1) += bj;
 
   }
   
@@ -325,6 +340,7 @@ bool MultiICPSolver::oneRound(const vector<TriplePairVector>& correspondences, b
   
   // build sparse system using saved triplets
   sparse_system.setFromTriplets(coefficients.begin(), coefficients.end());
+  // cout << sparse_system << endl;
   // Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> solver(sparse_system);       // performs a Cholesky factorization of A
   // dx = solver.solve(-_b);                                                         // use the factorization to solve for the given right hand side
   // cout << dx << endl << endl;
