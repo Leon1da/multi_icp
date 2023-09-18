@@ -34,9 +34,8 @@ using namespace popl;
 
 using ScalarType = double;
 
-using NICP3dJacobianType = Eigen::Matrix<ScalarType, 1, 6>;
-using NICP2dJacobianType = Eigen::Matrix<ScalarType, 1, 3>;
 
+using CovarianceType = Eigen::Matrix<ScalarType, 2, 2>;
 
 typedef std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf> > VectorXfVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;

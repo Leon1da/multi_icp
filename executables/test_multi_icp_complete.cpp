@@ -165,27 +165,18 @@ int main (int argc, char** argv) {
         PointType query_point = points[map_point.point_index()];
         AnswerType point_neighbors;
         kdtree_points_vector[pose_index].fullSearch(point_neighbors, query_point, 0.3);
+        size_t num_neighbors = point_neighbors.size();
 
-        if (point_neighbors.size() < (size_t) min_local_correspondences) continue;
 
-        IntVector indices;
-        for (size_t n = 0; n < point_neighbors.size(); n++){
-          int neighbor_index = points_indices_vector[pose_index][point_neighbors[n] - &points_container_vector[pose_index][0]];
-          MapPoint p = map[pose_index][neighbor_index];
-          indices.push_back(p.point_index());
-        } 
+        if (num_neighbors < (size_t) min_local_correspondences) continue;
 
-          // double normal_vector_angle;
-          // if (estimate_normal(points, indices, normal_vector_angle)) {
-          //   Vector2d normal;
-          //   normal << cos(normal_vector_angle), sin(normal_vector_angle);
-          //   normals.push_back(normal);
-          //   map_point.set_normal_index(normals.size() - 1);
-          //   // cout << "classic normal " << endl << normal << endl << "(norm: " << normal.norm() << " )"<< endl;
-          // }
-          
-        PointType normal;
-        if (!estimate_normal(points, indices, normal)) continue;
+
+        PointContainerType neighbor_container(num_neighbors);
+        for (size_t neighbor_index = 0; neighbor_index < num_neighbors; neighbor_index++) neighbor_container[neighbor_index] = *point_neighbors[neighbor_index];
+        CovarianceType cov;
+        PointType mean, normal;
+        computeMeanAndCovariance(mean, cov, neighbor_container.begin(), neighbor_container.end());
+        normal = smallestEigenVector(cov);
         normals.push_back(normal);
         map_point.set_normal_index(normals.size() - 1);
 
