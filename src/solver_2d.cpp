@@ -1,6 +1,6 @@
 #include "defs.h"
 
-class MultiICPSolver{
+class NICP2dSolver{
     
     private:
                                //< this will hold our state
@@ -23,7 +23,7 @@ class MultiICPSolver{
       int _num_inliers;
       int _num_outliers;
 
-      bool compute_error_and_jacobians(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
+      bool compute_error_and_jacobian(double& error, Matrix1_3d& jacobian, const TriplePair& correspondence);
 
       void linearize(const vector<TriplePairVector>& corresponendeces, vector<Eigen::Triplet<double>>& coefficients, bool keep_outliers);
 
@@ -52,7 +52,7 @@ class MultiICPSolver{
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
       //! ctor
-      MultiICPSolver();
+      NICP2dSolver();
 
       //! init method, call it at the beginning
       //! @param poses: the poses of the world
@@ -98,7 +98,7 @@ class MultiICPSolver{
 
 
   
-MultiICPSolver::MultiICPSolver(){
+NICP2dSolver::NICP2dSolver(){
   _poses=0;
   _points=0;
   _normals=0;
@@ -112,7 +112,7 @@ MultiICPSolver::MultiICPSolver(){
   
 }
 
-void MultiICPSolver::init(Eigen::VectorXd& state, const Vector3dVector& poses, const Vector2dVector& points, const Vector2dVector& normals, double kernel_threshold, double damping){
+void NICP2dSolver::init(Eigen::VectorXd& state, const Vector3dVector& poses, const Vector2dVector& points, const Vector2dVector& normals, double kernel_threshold, double damping){
   _state = &state;
   _poses = &poses;
   _points = &points;
@@ -126,9 +126,8 @@ void MultiICPSolver::init(Eigen::VectorXd& state, const Vector3dVector& poses, c
 
 
 
-bool MultiICPSolver::compute_error_and_jacobians(double& error,
-                                  Matrix1_3d& Ji,
-                                  Matrix1_3d& Jj,
+bool NICP2dSolver::compute_error_and_jacobian(double& error,
+                                  Matrix1_3d& jacobian,
                                   const TriplePair& correspondence){
 
     int cur_pose_index = get<0>(correspondence.first);
@@ -147,45 +146,36 @@ bool MultiICPSolver::compute_error_and_jacobians(double& error,
     Vector2d pj = (*_points)[ref_point_index];
     Vector2d nj = (*_normals)[ref_normal_index];
 
-    // ek_ij = (Xi*pk_i - Xj*pk_j)(Ri*nk_i + Rj*nk_j) 
-    // (x_i y_i theta_i x_j y_j theta_j)
-      
-    Eigen::Isometry2d Xki = v2t(Xi);
-    Eigen::Isometry2d Xkj = v2t(Xj);
-
-    Vector2d ni_w = Xki.rotation()*ni;
-    Vector2d nj_w = Xkj.rotation()*nj;
-
-    Vector2d pi_w = Xki*pi;
-    Vector2d pj_w = Xkj*pj;
-
-
-    Vector2d beta = ni_w + nj_w; // bn1 + an2
+    // normals in world frame
+    Vector2d w_ni = v2t(Xi).rotation()*ni;
+    Vector2d w_nj = v2t(Xj).rotation()*nj;
     
-    Vector2d alpha = Xki*pi - Xkj*pj;
+    // points in world frames
+    Vector2d w_pi = v2t(Xi)*pi;
+    Vector2d w_pj = v2t(Xj)*pj;
 
-    Eigen::Isometry2d dRi = dRz(Xi.z());
-    Eigen::Isometry2d dRj = dRz(Xj.z());
+    
+                      // [ni_x + nj_x, ni_y + nj_y,     ni_y*pj_x     - ni_x*pj_y     - nj_x*pi_y     + nj_y*pi_x]
+    jacobian = Matrix1_3d((w_ni + w_nj).x(), (w_ni + w_nj).y(), w_ni.y()*w_pj.x() - w_ni.x()*w_pj.y() - w_nj.x()*w_pi.y() + w_nj.y()*w_pi.x());
+    error = (w_pi - w_pj).dot(w_ni + w_nj);
 
+    // Vector2d normal_sum = w_ni + w_ni;
+    // Vector2d points_diff = w_pi - w_pj;
 
+    // jacobian = Matrix1_3d(normal_sum.x(), normal_sum.y(), w_pi.x()*w_nj.y() - w_pi.y()*w_nj.x() + w_pj.x()*w_ni.y() - w_pj.y()*w_ni.x());
+    
     // // compute the jacobian of the transformation
-    // Ji = Matrix1_3d(beta.x(), beta.y(), beta.dot(dRi * pi) + alpha.dot(dRi * ni));
-    // Jj = Matrix1_3d(-beta.x(), -beta.y(), -beta.dot(dRj * pj) + alpha.dot(dRj * nj));
+    // Ji = Matrix1_3d(beta.x(), beta.y(), pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x());
+    // Jj = Matrix1_3d(-beta.x(), -beta.y(), -(pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x()));
     
-    // error = alpha.dot(beta);
-    
-    // compute the jacobian of the transformation
-    Ji = Matrix1_3d(beta.x(), beta.y(), pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x());
-    Jj = Matrix1_3d(-beta.x(), -beta.y(), -(pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x()));
-    
-    error = (pi_w - pj_w).dot(beta);
+    // error = (points_diff).dot(normal_sum);
 
     return true;
 }
 
 
 
-void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>> &coefficients, bool keep_outliers){
+void NICP2dSolver::linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>> &coefficients, bool keep_outliers){
 
   _num_inliers=0;
   _chi_inliers=0;
@@ -199,25 +189,18 @@ void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, 
     
     TriplePairVector pose_pose_correspondences = correspondences[block_index];
     
-    Eigen::Matrix3d Jii, Jij, Jji, Jjj;
-    Jii.setZero();
-    Jij.setZero();
-    Jji.setZero();
-    Jjj.setZero();
-
-    Eigen::Matrix3d cii, cij, cji, cjj;
-    cii.setZero();
-    cij.setZero();
-    cji.setZero();
-    cjj.setZero();
-
-    Eigen::Vector3d ci, cj;
-    ci.setZero();
-    cj.setZero();
-
-    Eigen::Vector3d bi, bj;
-    bi.setZero();
-    bj.setZero();
+    Eigen::Matrix3d H;
+    H.setZero();
+    
+    Eigen::Matrix3d cH;
+    cH.setZero();
+    
+    Eigen::Vector3d b;
+    b.setZero();
+    
+    Eigen::Vector3d cb;
+    cb.setZero();
+    
 
     if (!pose_pose_correspondences.size()){
       cout << "No correspondences found ( " << block_index << " / " << correspondences.size() << " )" << endl;
@@ -234,10 +217,9 @@ void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, 
       ref_pose_index = get<0>(correspondence.second);
       
       double e;
-      Matrix1_3d J_cur;
-      Matrix1_3d J_ref;
-
-      if (!compute_error_and_jacobians(e, J_cur, J_ref, correspondence)) continue;
+      Matrix1_3d J;
+      
+      if (!compute_error_and_jacobian(e, J, correspondence)) continue;
       
       float chi = e*e;
       float lambda=1;
@@ -254,24 +236,15 @@ void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, 
 
       
       if (is_inlier || keep_outliers){
+
+        Eigen::Matrix3d Hv = J.transpose()*J*lambda;
         
-        Eigen::Matrix3d Jiiv = J_cur.transpose()*J_cur*lambda;
-        Eigen::Matrix3d Jijv = J_cur.transpose()*J_ref*lambda;
-        Eigen::Matrix3d Jjiv = Jijv.transpose();
-        Eigen::Matrix3d Jjjv = J_ref.transpose()*J_ref*lambda;
-
-        KahanMatrixSummation(Jii, cii, Jiiv);
-        KahanMatrixSummation(Jij, cij, Jijv);
-        KahanMatrixSummation(Jji, cji, Jjiv);
-        KahanMatrixSummation(Jjj, cjj, Jjjv);
-
-        Eigen::Vector3d biv = J_cur.transpose()*e*lambda;
-        Eigen::Vector3d bjv = J_ref.transpose()*e*lambda;
+        KahanMatrixSummation(H, cH, Hv);
         
-        KahanVectorSummation(bi, ci, biv);
-        KahanVectorSummation(bj, cj, bjv);
+        Eigen::Vector3d bv = J.transpose()*e*lambda;
 
-      
+        KahanVectorSummation(b, cb, bv);
+
       }
     }
             
@@ -279,29 +252,28 @@ void MultiICPSolver::linearize(const vector<TriplePairVector>& correspondences, 
     {
       for (size_t j = 0; j < 3; j++)
       {
-        if (cur_pose_index) coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, cur_pose_index*3+j, Jii.coeff(i, j)));
+        if (cur_pose_index) coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, cur_pose_index*3+j, H.coeff(i, j)));
         if (cur_pose_index && ref_pose_index)
         {
-          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, ref_pose_index*3+j, Jij.coeff(i, j)));
-          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, cur_pose_index*3+j, Jji.coeff(i, j)));
+          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3+i, ref_pose_index*3+j, -H.coeff(i, j)));
+          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, cur_pose_index*3+j, -H.coeff(i, j)));
         }
-        if (ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, ref_pose_index*3+j, Jjj.coeff(i, j)));
+        if (ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3+i, ref_pose_index*3+j, H.coeff(i, j)));
       }
     }
 
-    if(cur_pose_index) _b.block(cur_pose_index*3, 0, 3, 1) += bi;  
-    if(ref_pose_index) _b.block(ref_pose_index*3, 0, 3, 1) += bj;
+    if(cur_pose_index) _b.block(cur_pose_index*3, 0, 3, 1) += b;  
+    if(ref_pose_index) _b.block(ref_pose_index*3, 0, 3, 1) += -b;
 
   }
   
 }
 
 
-bool MultiICPSolver::oneRound(const vector<TriplePairVector>& correspondences, bool keep_outliers){
+bool NICP2dSolver::oneRound(const vector<TriplePairVector>& correspondences, bool keep_outliers){
 
   std::vector<Eigen::Triplet<double>> coefficients;
 
-  cout << "linearize.." << endl;
   linearize(correspondences, coefficients, keep_outliers);
 
   if(_num_inliers <_min_num_inliers) {
@@ -314,52 +286,15 @@ bool MultiICPSolver::oneRound(const vector<TriplePairVector>& correspondences, b
   
   // damping
   for (size_t i = 0; i < _state_dim * 3; i++) coefficients.push_back(Eigen::Triplet<double>(i, i, _damping));
-  
 
-  cout << "solving system.." << endl;
   Eigen::VectorXd dx;
-  
-  
-  // dx = _H.bdcSvd().solve(-_b);
-  // cout << dx << endl << endl;
-
-  // dx = _H.fullPivHouseholderQr().solve(-_b);
-  // cout << dx << endl << endl;
-  
-  // dx = _H.colPivHouseholderQr().solve(-_b);
-  // // cout << dx << endl << endl;
-
-  // dx = _H.fullPivLu().solve(-_b);
-  // // cout << dx << endl << endl;
-  
-  // dx = _H.colPivHouseholderQr().solve(-_b);
-  // cout << dx << endl << endl;
-  
-  // dx = _H.ldlt().solve(-_b);
-  // cout << dx << endl << endl;
   
   // build sparse system using saved triplets
   sparse_system.setFromTriplets(coefficients.begin(), coefficients.end());
-  // cout << sparse_system << endl;
-  // Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> solver(sparse_system);       // performs a Cholesky factorization of A
-  // dx = solver.solve(-_b);                                                         // use the factorization to solve for the given right hand side
-  // cout << dx << endl << endl;
-
-  // Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver(sparse_system);
-  // dx = solver.solve(-_b);                                                         // use the factorization to solve for the given right hand side
-  // cout << dx << endl << endl;
-
+  
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> solver(sparse_system);  
   dx = solver.solve(-_b);                                                         
-  // cout << dx << endl << endl;
-
-  // Eigen::CholmodDecomposition<Eigen::SparseMatrix<double>> solver(sparse_system);
-  // dx = solver.solve(-_b);
   
-  // Eigen::SPQR<Eigen::SparseMatrix<double>> spqrsolver(sparse_system);
-  // dx = spqrsolver.solve(-_b);                                                         
-  // // cout << dx << endl << endl;
-
   *_state = dx;
 
   return true;

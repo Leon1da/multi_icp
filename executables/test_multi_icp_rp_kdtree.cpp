@@ -20,6 +20,7 @@ int main (int argc, char** argv) {
     int poses_kdtree_dim;
     int min_poses_correspondences;
     int min_local_correspondences;
+    int iterations;
     double kernel_threshold;
     double damping;
     bool keep_outliers;
@@ -27,15 +28,15 @@ int main (int argc, char** argv) {
     bool out = read_configuration(
       argc, argv, 
       dataset_filename, dataset_from_record_number, dataset_num_records,
-      points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences,
-      kernel_threshold, damping, keep_outliers);
+      points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences, 
+      iterations, kernel_threshold, damping, keep_outliers);
 
     if (!out) return 0;
     
 
     print_configuration(dataset_filename, dataset_from_record_number, dataset_num_records,
       points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences,
-      kernel_threshold, damping, keep_outliers);
+      iterations, kernel_threshold, damping, keep_outliers);
     
     Dataset dataset(dataset_filename);
 

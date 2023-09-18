@@ -122,6 +122,7 @@ bool read_configuration(
     int &poses_kdtree_dim,
     int &min_poses_correspondences,
     int &min_local_correspondences,
+    int &iterations,
     double &kernel_threshold,
     double &damping,
     bool &keep_outliers
@@ -147,8 +148,9 @@ bool read_configuration(
     // auto points_finder_k_option = op.add<Value<int>>("k", "k", "[FINDER] kernel threshold", 2, &kernel_threshold);
 
     // solver options
-    auto kernel_threshold_option = op.add<Value<double>>("k", "kernel_threshold", "[SOLVER] Kernel threshold used during optimization.", 1.0, &kernel_threshold);
-    auto damping_option = op.add<Value<double>>("d", "damping", "[SOLVER] Damping factor used during optimization", 1.0, &damping);
+    auto iterations_option = op.add<Value<int>>("i", "iterations", "[SOLVER] number of iterations.", 10, &iterations);
+    auto kernel_threshold_option = op.add<Value<double>>("k", "kernel_threshold", "[SOLVER] Kernel threshold used during optimization.", 0.025, &kernel_threshold);
+    auto damping_option = op.add<Value<double>>("d", "damping", "[SOLVER] Damping factor used during optimization", 1000.0, &damping);
     auto keep_outliers_option = op.add<Switch>("o", "keep_outliers", "[SOLVER] Consider or not outliers during the computation", &keep_outliers);
 
     op.parse(argc, argv);
@@ -185,6 +187,7 @@ void print_configuration(
     int& poses_kdtree_dim,
     int& min_poses_correspondences,
     int& min_local_correspondences,
+    int& iterations,
     double& kernel_threshold,
     double& damping,
     bool& keep_outliers
@@ -205,6 +208,7 @@ void print_configuration(
     cout << " - [FINDER] min_local_correspondences = " << min_local_correspondences << endl;
 
     cout << endl;
+    cout << " - [SOLVER] iterations = " << iterations << endl;
     cout << " - [SOLVER] kernel_threshold = " << kernel_threshold << endl;
     cout << " - [SOLVER] damping = " << damping << endl;
     cout << " - [SOLVER] keep_outliers = " << keep_outliers << endl;

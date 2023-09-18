@@ -20,6 +20,7 @@ bool read_configuration(
     int& poses_kdtree_dim,
     int& min_poses_correspondences,
     int& min_local_correspondences,
+    int& iterations,
     double& kernel_threshold,
     double& damping,
     bool& keep_outliers
@@ -33,6 +34,7 @@ bool print_configuration(
     int& poses_kdtree_dim,
     int& min_poses_correspondences,
     int& min_local_correspondences,
+    int& iterations,
     double& kernel_threshold,
     double& damping,
     bool& keep_outliers

@@ -1,10 +1,10 @@
 #include "defs.h"
 
-  class MultiICPSolver{
+  class NICP2dSolver{
     
     private:
 
-      bool compute_error_and_jacobians(double& error, Matrix1_3d& Ji, Matrix1_3d& Jj, const TriplePair& correspondence);
+      bool compute_error_and_jacobian(double& error, Matrix1_3d& jacobian, const TriplePair& correspondence);
 
       void linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>>& coefficients, bool keep_outliers);
 
@@ -36,7 +36,7 @@
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
       //! ctor
-      MultiICPSolver();
+      NICP2dSolver();
 
       //! init method, call it at the beginning
       //! @param state: the state
