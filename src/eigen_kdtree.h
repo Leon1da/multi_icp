@@ -27,18 +27,39 @@ public:
     _begin(begin_),
     _end(end_)
   {
-    int num_points=std::distance(_begin, _end);
-    if (num_points < max_points_in_leaf)
-      return;
     CovarianceType cov;
     computeMeanAndCovariance(_mean, cov, _begin, _end);
-    _normal = largestEigenVector(cov);
+    int num_points=std::distance(_begin, _end);
+    if (num_points < max_points_in_leaf){
+      _smallest_eigenvector = smallestEigenVector(cov);
+      return;
+    }
+    
+    _largest_eigenvector = largestEigenVector(cov);
 
+    
     IntVector::iterator indices_middle;
-    pair<IteratorType, IntVector::iterator> middle_pair = split(_begin, _end, indices_begin_, indices_end_, PlaneSidePredicate_<PointType>(_mean, _normal) );
+    pair<IteratorType, IntVector::iterator> middle_pair = split(_begin, _end, indices_begin_, indices_end_, PlaneSidePredicate_<PointType>(_mean, _largest_eigenvector) );
     _left  = PtrType(new ThisType(_begin, middle_pair.first, indices_begin_, middle_pair.second, max_points_in_leaf) );
     _right = PtrType(new ThisType(middle_pair.first, _end, middle_pair.second, indices_end_, max_points_in_leaf) );
     
+  }
+
+  void getLeafPoints(AnswerType& answers, const PointType& query) {
+      
+      if (! _left && !_right) {
+        for (auto it=_begin; it!=_end; ++it) {
+          auto& p=*it;
+          answers.push_back(&p);
+        }
+        return;
+      }
+      Scalar distance_from_split_plane = (query-_mean).dot(_largest_eigenvector);
+      if (distance_from_split_plane<Scalar(0))
+        _left->getLeafPoints(answers, query);
+      else
+        _right->getLeafPoints(answers, query);
+      
   }
 
   void fastSearch(AnswerType& answers,
@@ -48,7 +69,7 @@ public:
       bruteForceSearch(answers, _begin, _end, query, norm);
       return;
     }
-    Scalar distance_from_split_plane =  (query-_mean).dot(_normal);
+    Scalar distance_from_split_plane =  (query-_mean).dot(_largest_eigenvector);
     if (distance_from_split_plane<Scalar(0))
       _left->fastSearch(answers,query,norm);
     else
@@ -62,7 +83,7 @@ public:
       bruteForceSearch(answers, _begin, _end, query, norm);
       return;
     }
-    Scalar distance_from_split_plane =  (query-_mean).dot(_normal);
+    Scalar distance_from_split_plane =  (query-_mean).dot(_largest_eigenvector);
     if (distance_from_split_plane < -norm ){
       _left->fullSearch(answers,query, norm);
     }
@@ -81,7 +102,7 @@ public:
     if (! _left && !_right) {
       return bruteForceBestMatch(_begin, _end, query, norm);
     }
-    Scalar distance_from_split_plane =  (query-_mean).dot(_normal);
+    Scalar distance_from_split_plane =  (query-_mean).dot(_largest_eigenvector);
     if (distance_from_split_plane<Scalar(0))
       return _left->bestMatchFast(query, norm);
     else
@@ -96,7 +117,7 @@ public:
     if (! _left && !_right) {
       return bruteForceBestMatch(_begin, _end, query, norm);
     }
-    Scalar distance_from_split_plane =  (query-_mean).dot(_normal);
+    Scalar distance_from_split_plane =  (query-_mean).dot(_largest_eigenvector);
 
     if (distance_from_split_plane < -norm )
       return _left->bestMatchFull(query, norm);
@@ -117,7 +138,8 @@ public:
 
     return p_right;
   }
-  PointType _mean, _normal;
+
+  PointType _mean, _smallest_eigenvector, _largest_eigenvector;
   IteratorType _begin, _end;
   PtrType _left, _right;
 };

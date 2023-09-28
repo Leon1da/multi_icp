@@ -72,6 +72,15 @@ class NICP2dSolver{
         jacobian = Matrix1_3d((w_ni + w_nj).x(), (w_ni + w_nj).y(), w_ni.y()*w_pj.x() - w_ni.x()*w_pj.y() - w_nj.x()*w_pi.y() + w_nj.y()*w_pi.x());
         error = (w_pi - w_pj).dot(w_ni + w_nj);
 
+        // if (jacobian.hasNaN() || isnan(error)){
+        //   cout << " [ " << cur_pose_index << " " << cur_point_index << " " << cur_normal_index << " ][ " << ref_pose_index << " " << ref_point_index << " " << ref_normal_index << " ]" << endl;
+        //   cout << pi.transpose() << " " << pj.transpose() << " " << ni.transpose() << " " << nj.transpose() << endl;
+        //   cout << w_pi.transpose() << " " << w_pj.transpose() << " " << w_ni.transpose() << " " << w_nj.transpose() << endl;
+        // }
+
+        // cout << error << endl << endl;
+        // cout << jacobian << endl << endl;
+
         // Vector2d normal_sum = w_ni + w_ni;
         // Vector2d points_diff = w_pi - w_pj;
 
@@ -87,7 +96,7 @@ class NICP2dSolver{
     }
 
       void linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>> &coefficients, bool keep_outliers){
-
+        
         _num_inliers=0;
         _chi_inliers=0;
         _num_outliers=0;
@@ -97,7 +106,7 @@ class NICP2dSolver{
 
         for (size_t block_index = 0; block_index < correspondences.size(); block_index++)
         {
-          
+
           TriplePairVector pose_pose_correspondences = correspondences[block_index];
           
           Eigen::Matrix3d H;
@@ -121,8 +130,7 @@ class NICP2dSolver{
           int cur_pose_index, ref_pose_index; 
           for (size_t index = 0; index < pose_pose_correspondences.size(); index++)
           {
-
-            
+           
             TriplePair correspondence = pose_pose_correspondences[index];
             cur_pose_index = get<0>(correspondence.first);
             ref_pose_index = get<0>(correspondence.second);
@@ -149,16 +157,14 @@ class NICP2dSolver{
             if (is_inlier || keep_outliers){
 
               Eigen::Matrix3d Hv = J.transpose()*J*lambda;
-              
               KahanMatrixSummation(H, cH, Hv);
-              
-              Eigen::Vector3d bv = J.transpose()*e*lambda;
 
+              Eigen::Vector3d bv = J.transpose()*e*lambda;
               KahanVectorSummation(b, cb, bv);
 
             }
           }
-                  
+                       
           for (size_t i = 0; i < 3; i++)
           {
             for (size_t j = 0; j < 3; j++)
@@ -253,10 +259,10 @@ class NICP2dSolver{
         
         // build sparse system using saved triplets
         sparse_system.setFromTriplets(coefficients.begin(), coefficients.end());
-        
         Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> solver(sparse_system);  
-        dx = solver.solve(-_b);                                                         
-        
+
+        dx = solver.solve(-_b);
+
         *_state = dx;
 
         return true;

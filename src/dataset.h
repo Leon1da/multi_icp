@@ -212,6 +212,8 @@ class Dataset{
                     angle = angle + angle_offset;
                     
                     float value = values[beam_index];
+
+                    // if (value < 2 || value > 5 ) continue;
                     // float value = record.values()[beam_index];
 
                     Vector2d point;

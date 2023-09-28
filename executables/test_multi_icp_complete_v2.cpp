@@ -146,7 +146,7 @@ int main (int argc, char** argv) {
       points_container_vector.push_back(points_container);
       points_indices_vector.push_back(points_indices);
 
-      TreeNodeType kdtree_points(points_container_vector[pose_index].begin(), points_container_vector[pose_index].end(), points_indices_vector[pose_index].begin(), points_indices_vector[pose_index].end(), 5);
+      TreeNodeType kdtree_points(points_container_vector[pose_index].begin(), points_container_vector[pose_index].end(), points_indices_vector[pose_index].begin(), points_indices_vector[pose_index].end(), 10);
       kdtree_points_vector.push_back(move(kdtree_points));
     }
 
@@ -162,24 +162,41 @@ int main (int argc, char** argv) {
       {
         MapPoint& map_point = map[pose_index][point_index];
 
+        TreeNodeType::AnswerType leaf_points;
         PointType query_point = points[map_point.point_index()];
-        AnswerType point_neighbors;
-        kdtree_points_vector[pose_index].fullSearch(point_neighbors, query_point, 0.3);
-        size_t num_neighbors = point_neighbors.size();
+        
+        kdtree_points_vector[pose_index].getLeafPoints(leaf_points, query_point);
+        size_t num_leaf_nodes = leaf_points.size();
 
-        if (num_neighbors < (size_t) min_local_correspondences) continue;
+        if (num_leaf_nodes < (size_t) min_local_correspondences) continue;
 
-        PointContainerType neighbor_container(num_neighbors);
-        for (size_t neighbor_index = 0; neighbor_index < num_neighbors; neighbor_index++) neighbor_container[neighbor_index] = *point_neighbors[neighbor_index];
+        PointContainerType neighbor_container(leaf_points.size());
+        for (size_t neighbor_index = 0; neighbor_index < leaf_points.size(); neighbor_index++) neighbor_container[neighbor_index] = *leaf_points[neighbor_index];
         CovarianceType cov;
         PointType mean, normal;
         computeMeanAndCovariance(mean, cov, neighbor_container.begin(), neighbor_container.end());
         normal = smallestEigenVector(cov);
-        normals.push_back(normal);
+        
+        normals.push_back(move(normal));
         map_point.set_normal_index(normals.size() - 1);
 
-          
         
+        // PointType query_point = points[map_point.point_index()];
+        // AnswerType point_neighbors;
+        // kdtree_points_vector[pose_index].fullSearch(point_neighbors, query_point, 0.3);
+        // size_t num_neighbors = point_neighbors.size();
+
+        // if (num_neighbors < (size_t) min_local_correspondences) continue;
+
+        // PointContainerType neighbor_container(num_neighbors);
+        // for (size_t neighbor_index = 0; neighbor_index < num_neighbors; neighbor_index++) neighbor_container[neighbor_index] = *point_neighbors[neighbor_index];
+        // CovarianceType cov;
+        // PointType mean, normal;
+        // computeMeanAndCovariance(mean, cov, neighbor_container.begin(), neighbor_container.end());
+        // normal = smallestEigenVector(cov);
+        // normals.push_back(normal);
+        // map_point.set_normal_index(normals.size() - 1);
+
       }
     }
     
@@ -283,7 +300,7 @@ int main (int argc, char** argv) {
         }
         
       }
-      
+
       solver.oneRound(correspondences, keep_outliers);
       
       cout << setw(15) << fixed  << setprecision(2) << iteration;

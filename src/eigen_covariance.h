@@ -1,5 +1,4 @@
 #pragma once
-#include "eigen_01_point_loading.h"
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
