@@ -62,7 +62,7 @@ int main (int argc, char** argv) {
 
     cout << "Loading data.." << endl;
 
-    dataset.load_data(poses, sensor_poses, points, map, 0, 500);
+    dataset.load_data(poses, sensor_poses, points, map, 0, 200);
 
 
     size_t num_poses = poses.size();
@@ -145,6 +145,11 @@ int main (int argc, char** argv) {
     Scalar pink(255, 0, 255);
     Scalar black(0, 0, 0);
     Scalar white(255, 255, 255);
+
+
+    Scalar pose_color(194, 1, 20);
+    Scalar correspondence_color(30, 30, 36);
+    
     
 
 
@@ -157,7 +162,7 @@ int main (int argc, char** argv) {
         for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
         {
           Vector3d world_pose = poses[pose_index];
-          drawer.drawPose(world_pose, drawer_controller, red);
+          drawer.drawPose(world_pose, drawer_controller, pose_color);
 
           for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
           {
@@ -181,7 +186,7 @@ int main (int argc, char** argv) {
           // cout << "[ " << c._src_pose << " " << c._src_point << " ] [ " << c._dst_pose << " " << c._dst_point << " ]" << endl;
           Vector2d start_point = Vector2d(start_pose.x(), start_pose.y());
           Vector2d end_point = Vector2d(end_pose.x(), end_pose.y());
-          drawer.drawLine(start_point, end_point, drawer_controller, green);
+          drawer.drawLine(start_point, end_point, drawer_controller, correspondence_color);
 
         }
         

@@ -265,7 +265,7 @@ void Drawer::drawPose(Eigen::Vector3d& pose, DrawerController& controller, Scala
     ri = controller.scale() * (pose.y() - _data_mean.y()) + controller.v();
     
     // int radius = 3 * controller.scale();
-    int radius = 3;
+    int radius = 5;
     cf = ci + radius * cos(theta);
     rf = ri + radius * sin(theta);
 

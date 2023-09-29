@@ -251,6 +251,22 @@ int main (int argc, char** argv) {
     Scalar pink(255, 0, 255);
     Scalar black(0, 0, 0);
     Scalar white(255, 255, 255);
+
+    
+    
+    Scalar blue_(148, 170, 100); 
+    Scalar red_(1, 20, 194);
+    Scalar green_(173, 105, 14);
+    Scalar grey_(54, 56, 49);
+    Scalar black_(30, 36, 30);
+
+    Scalar pose_color = red_;
+    Scalar point_color = black_;
+    Scalar correspondence_color = blue_;
+    Scalar normal_color = green_;
+    
+
+    
     
     bool drawing_poses = true;
     bool drawing_points = true;
@@ -272,7 +288,7 @@ int main (int argc, char** argv) {
           Vector3d world_pose = poses[pose_index];
           if (drawing_poses)
           {
-            drawer.drawPose(world_pose, drawer_controller, red);
+            drawer.drawPose(world_pose, drawer_controller, pose_color);
           }
           
           for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -282,13 +298,13 @@ int main (int argc, char** argv) {
               
             if (drawing_points)
             {
-              drawer.drawPoint(world_point, drawer_controller, black);  
+              drawer.drawPoint(world_point, drawer_controller, point_color);  
             }
 
             if (map_point.has_normal() && drawing_normals)
             {
               Vector2d world_normal = world_point + v2t(poses[pose_index]).rotation() * normals[map_point.normal_index()] * 0.05; // It's ok
-              drawer.drawLine(world_point, world_normal, drawer_controller, green);
+              drawer.drawLine(world_point, world_normal, drawer_controller, normal_color);
               
             }
               
@@ -304,7 +320,7 @@ int main (int argc, char** argv) {
             
               Vector2d start_point = v2t(poses[get<0>(c.first)]) * points[get<1>(c.first)];
               Vector2d end_point = v2t(poses[get<0>(c.second)]) * points[get<1>(c.second)];
-              drawer.drawLine(start_point, end_point, drawer_controller, green);
+              drawer.drawLine(start_point, end_point, drawer_controller, correspondence_color);
 
           }
           
@@ -317,7 +333,7 @@ int main (int argc, char** argv) {
             IntPair c = poses_correspondences[i];
             Vector2d start_point = poses[c.first].block(0, 0, 2, 1);
             Vector2d end_point = poses[c.second].block(0, 0, 2, 1);
-            drawer.drawLine(start_point, end_point, drawer_controller, pink);
+            drawer.drawLine(start_point, end_point, drawer_controller, correspondence_color);
 
           }
           
