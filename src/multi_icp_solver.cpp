@@ -113,37 +113,38 @@ bool MultiICPSolver::errorAndJacobian(double& error,
                                   Matrix1_3d& Jj,
                                   const TriplePair& correspondence){
 
-    int cur_pose_index = get<0>(correspondence.first);
-    int cur_point_index = get<1>(correspondence.first);
-    int cur_normal_index = get<2>(correspondence.first);
+   
 
-    int ref_pose_index = get<0>(correspondence.second);
-    int ref_point_index = get<1>(correspondence.second);
-    int ref_normal_index = get<2>(correspondence.second);
- 
-    Vector3d Xi = (*_poses)[cur_pose_index];
-    Vector2d pi = (*_points)[cur_point_index];
-    Vector2d ni = (*_normals)[cur_normal_index];
     
-    Vector3d Xj = (*_poses)[ref_pose_index];
-    Vector2d pj = (*_points)[ref_point_index];
-    Vector2d nj = (*_normals)[ref_normal_index];
+        int cur_pose_index = get<0>(correspondence.first);
+        int cur_point_index = get<1>(correspondence.first);
+        int cur_normal_index = get<2>(correspondence.first);
 
-      
-    Eigen::Isometry2d Xki = v2t(Xi);
-    Eigen::Isometry2d Xkj = v2t(Xj);
+        int ref_pose_index = get<0>(correspondence.second);
+        int ref_point_index = get<1>(correspondence.second);
+        int ref_normal_index = get<2>(correspondence.second);
     
-    Vector2d alpha = (Xki*pi - Xkj*pj);
-    Vector2d beta = (Xki.rotation()*ni + Xkj.rotation()*nj);
-    
-    Eigen::Isometry2d dRi = dRz(Xi.z());
-    Eigen::Isometry2d dRj = dRz(Xj.z());
+        Vector3d Xi = (*_poses)[cur_pose_index];
+        Vector2d pi = (*_points)[cur_point_index];
+        Vector2d ni = (*_normals)[cur_normal_index];
+        
+        Vector3d Xj = (*_poses)[ref_pose_index];
+        Vector2d pj = (*_points)[ref_point_index];
+        Vector2d nj = (*_normals)[ref_normal_index];
 
-    // compute the jacobian of the transformation
-    Ji = Matrix1_3d(beta.x(), beta.y(), beta.dot(dRi * pi) + alpha.dot(dRi * ni));
-    Jj = Matrix1_3d(-beta.x(), -beta.y(), -beta.dot(dRj * pj) + alpha.dot(dRj * nj));
+        // normals in world frame
+        Vector2d w_ni = v2t(Xi).rotation()*ni;
+        Vector2d w_nj = v2t(Xj).rotation()*nj;
+        
+        // points in world frames
+        Vector2d w_pi = v2t(Xi)*pi;
+        Vector2d w_pj = v2t(Xj)*pj;
 
-    error = alpha.dot(beta);
+        
+        // [ni_x + nj_x, ni_y + nj_y,     ni_y*pj_x     - ni_x*pj_y     - nj_x*pi_y     + nj_y*pi_x]
+        Ji = Matrix1_3d((w_ni + w_nj).x(), (w_ni + w_nj).y(), w_ni.y()*w_pj.x() - w_ni.x()*w_pj.y() - w_nj.x()*w_pi.y() + w_nj.y()*w_pi.x());
+        Jj = -Ji;
+        error = (w_pi - w_pj).dot(w_ni + w_nj);
 
     return true;
 }
@@ -199,10 +200,11 @@ void MultiICPSolver::linearize(const TriplePairVector& correspondences, bool kee
       {
         for (size_t j = 0; j < 3; j++)
         {
-          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, cur_pose_index*3 + j, Jii.coeff(i,j)));
-          coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, ref_pose_index*3 + j, Jij.coeff(i,j)));
-          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, cur_pose_index*3 + j, Jji.coeff(i,j)));
-          coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, ref_pose_index*3 + j, Jjj.coeff(i,j)));
+
+          if (cur_pose_index) coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, cur_pose_index*3 + j, Jii.coeff(i,j)));
+          if (cur_pose_index && ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(cur_pose_index*3 + i, ref_pose_index*3 + j, Jij.coeff(i,j)));
+          if (cur_pose_index && ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, cur_pose_index*3 + j, Jji.coeff(i,j)));
+          if (ref_pose_index) coefficients.push_back(Eigen::Triplet<double>(ref_pose_index*3 + i, ref_pose_index*3 + j, Jjj.coeff(i,j)));
 
         }
         
