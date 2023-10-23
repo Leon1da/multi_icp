@@ -52,6 +52,15 @@ int main (int argc, char** argv) {
       points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences,
       iterations, kernel_threshold, damping, keep_outliers);
     
+    string file_label;
+    string file_dir = "results/";
+
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S") << "_conf_it_" << iterations << "_kt_" << kernel_threshold << "_dm_" << damping << "_";
+    file_label = oss.str();
+
     Dataset dataset(dataset_filename);
 
     vector<vector<MapPoint>> map;
@@ -82,10 +91,11 @@ int main (int argc, char** argv) {
 
     cout << "Writing on file.." << endl;
     
-    ofstream points_file, poses_file;
-    points_file.open ("points.dat");
-    poses_file.open ("poses.dat");
-
+    ofstream points_file, poses_file, points_opt_file, poses_opt_file, poses_correspondences_file, points_correspondences_file, statistics_file;
+    
+    points_file.open (file_dir + file_label + "points.dat");
+    poses_file.open (file_dir + file_label + "poses.dat");
+    
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
         for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -121,7 +131,6 @@ int main (int argc, char** argv) {
         poses_indices.push_back(pose_index);
    
     }
-    
 
     TreeNodeType kdtree_poses(poses_container.begin(), poses_container.end(), poses_indices.begin(), poses_indices.end(), 5);
 
@@ -193,18 +202,24 @@ int main (int argc, char** argv) {
     Eigen::VectorXd state;
     solver.init(state, poses, points, normals, kernel_threshold, damping);
     
+    statistics_file.open (file_dir + file_label + "statistics.dat");
+    
+    statistics_file << "iteration, max_inliers, max_chi_inliers, max_outliers, max_chi_outliers, tot_inliers, tot_chi_inliers, tot_outliers, tot_chi_outliers" << endl;
+
     cout << "Init Multi ICP Solver ok." << endl;
 
     vector<TriplePairVector> correspondences;
     IntPairVector poses_correspondences;
     Eigen::MatrixXi fill_in(num_poses, num_poses);
 
+    
     cout << setw(15) << fixed  << setprecision(2) << "iteration";
-    cout << setw(15) << fixed  << setprecision(2) << "inliers";
-    cout << setw(15) << fixed  << setprecision(2) << "error";
-    cout << setw(15) << fixed  << setprecision(2) << "outliers";
-    cout << setw(15) << fixed  << setprecision(2) << "error";
+    cout << setw(20) << fixed  << setprecision(2) << "inliers [max/tot]";
+    cout << setw(20) << fixed  << setprecision(2) << "error [max/tot]";
+    cout << setw(20) << fixed  << setprecision(2) << "outliers [max/tot]";
+    cout << setw(20) << fixed  << setprecision(2) << "error [max/tot]";
     cout << endl;
+
     for (size_t iteration = 0; iteration < iterations; iteration++)
     {
       correspondences.clear();
@@ -239,7 +254,7 @@ int main (int argc, char** argv) {
           PointType pose_dir = PointType(cos(pose.z()), sin(pose.z()));
           PointType pose_neighbor_dir = PointType(cos(pose_neighbor.z()), sin(pose_neighbor.z()));
           // if the difference in the orientation between two nearest poses is greater than 90 degrees go to next iteration
-          if (pose_dir.dot(pose_neighbor_dir) < 0) continue; // angle greter than 90 degrees
+          // if (pose_dir.dot(pose_neighbor_dir) < 0) continue; // angle greter than 90 degrees
           poses_correspondences.push_back(IntPair(pose_index, pose_neighbor_index));
           
           for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -262,7 +277,7 @@ int main (int argc, char** argv) {
             PointType neighbor_point_normal = v2t(poses[map_neighbor_point.pose_index()]).rotation() * normals[map_neighbor_point.normal_index()]; 
             
             double prod = point_normal.dot(neighbor_point_normal);
-            if (prod < 0.9 ) continue; 
+            // if (prod < 0.9 ) continue; 
             
             IntTriple src = IntTriple(map_point.pose_index(), map_point.point_index(), map_point.normal_index());
             IntTriple dst = IntTriple(map_neighbor_point.pose_index(), map_neighbor_point.point_index(), map_neighbor_point.normal_index());
@@ -285,14 +300,26 @@ int main (int argc, char** argv) {
       }
       
       solver.oneRound(correspondences, keep_outliers);
-      
+
+      // log on shell
       cout << setw(15) << fixed  << setprecision(2) << iteration;
-      cout << setw(15) << fixed  << setprecision(2) << solver.numInliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.chiInliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.numOutliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.chiOutliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numMaxInliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiMaxInliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numMaxOutliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiMaxOutliers();
       cout << endl;
       
+      cout << setw(15) << fixed  << setprecision(2) << "";
+      cout << setw(20) << fixed  << setprecision(2) << solver.numTotInliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiTotInliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numTotOutliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiTotOutliers();
+      cout << endl;
+
+      statistics_file << iteration << ", " << solver.numMaxInliers() << ", " << solver.chiMaxInliers() << ", " << solver.numMaxOutliers() << ", " << solver.chiMaxOutliers()
+      << ", " << solver.numTotInliers() << ", " << solver.chiTotInliers() << ", " << solver.numTotOutliers() << ", " << solver.chiTotOutliers() << endl;
+      
+
       // update poses
       for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
       {
@@ -315,11 +342,12 @@ int main (int argc, char** argv) {
 
     }
 
-    cout << "Writing on file.." << endl;
-  
-    points_file.open ("points_opt.dat");
-    poses_file.open ("poses_opt.dat");
+    cout << "Writing optimizaed map on file.." << endl;
 
+    
+    points_opt_file.open (file_dir + file_label + "points_opt.dat");
+    poses_opt_file.open (file_dir + file_label + "poses_opt.dat");
+    
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
         for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -334,17 +362,56 @@ int main (int argc, char** argv) {
             PointType world_point = v2t(pose) * point;
             PointType world_pose = pose.block(0, 0, 2, 1);
             
-            points_file << world_point.transpose() << endl;
-            poses_file << world_pose.transpose() << endl;
+            points_opt_file << world_point.transpose() << endl;
+            poses_opt_file << world_pose.transpose() << endl;
 
         }    
     }
 
     
-    points_file.close();
-    poses_file.close();
+    points_opt_file.close();
+    poses_opt_file.close();
 
     cout << "Writing on file complete." << endl;
+
+    cout << "Writing correspondences on file.." << endl;
+
+    poses_correspondences_file.open (file_dir + file_label + "poses_correspondences.dat");
+    points_correspondences_file.open (file_dir + file_label + "points_correspondences.dat");
+    
+  
+    for (size_t correspondence_block_index = 0; correspondence_block_index < correspondences.size(); correspondence_block_index++)
+    {
+      TriplePairVector corr_block = correspondences[correspondence_block_index];
+
+      PoseType src_pose = poses[get<0>(corr_block[0].first)];
+      PoseType dst_pose = poses[get<0>(corr_block[0].second)];
+
+      poses_correspondences_file << src_pose.x() << " " << src_pose.y() << endl;
+      poses_correspondences_file << dst_pose.x() << " " << dst_pose.y() << endl << endl;
+
+
+      for (size_t correspondence_index = 0; correspondence_index < corr_block.size(); correspondence_index++)
+      {
+        TriplePair corr = correspondences[correspondence_block_index][0];
+        Vector2d src_point = points[get<1>(corr.first)];
+        Vector2d dst_point = points[get<1>(corr.second)];
+
+        PointType wpi = v2t(src_pose) * src_point;
+        PointType wpj = v2t(dst_pose) * dst_point;
+
+        points_correspondences_file << wpi.x() << " " << wpi.y() << endl;
+        points_correspondences_file << wpj.x() << " " << wpj.y() << endl << endl; 
+
+      }
+      
+    }
+
+    poses_correspondences_file.close();
+    points_correspondences_file.close();
+    
+    cout << "Writing on file complete." << endl;
+
     
     
     return 1;

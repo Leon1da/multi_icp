@@ -36,10 +36,15 @@ class NICP2dSolver{
       size_t _state_dim;
       Eigen::VectorXd _b;
       
-      double _chi_inliers;
-      double _chi_outliers;
-      int _num_inliers;
-      int _num_outliers;
+      double _max_chi_inliers;
+      double _max_chi_outliers;
+      int _max_num_inliers;
+      int _max_num_outliers;
+
+      double _total_chi_inliers;
+      double _total_chi_outliers;
+      int _total_num_inliers;
+      int _total_num_outliers;
 
       bool compute_error_and_jacobian(double& error, Matrix1_3d& jacobian, const TriplePair& correspondence){
 
@@ -72,41 +77,37 @@ class NICP2dSolver{
         jacobian = Matrix1_3d((w_ni + w_nj).x(), (w_ni + w_nj).y(), w_ni.y()*w_pj.x() - w_ni.x()*w_pj.y() - w_nj.x()*w_pi.y() + w_nj.y()*w_pi.x());
         error = (w_pi - w_pj).dot(w_ni + w_nj);
 
-        // if (jacobian.hasNaN() || isnan(error)){
-        //   cout << " [ " << cur_pose_index << " " << cur_point_index << " " << cur_normal_index << " ][ " << ref_pose_index << " " << ref_point_index << " " << ref_normal_index << " ]" << endl;
-        //   cout << pi.transpose() << " " << pj.transpose() << " " << ni.transpose() << " " << nj.transpose() << endl;
-        //   cout << w_pi.transpose() << " " << w_pj.transpose() << " " << w_ni.transpose() << " " << w_nj.transpose() << endl;
-        // }
-
-        // cout << error << endl << endl;
-        // cout << jacobian << endl << endl;
-
-        // Vector2d normal_sum = w_ni + w_ni;
-        // Vector2d points_diff = w_pi - w_pj;
-
-        // jacobian = Matrix1_3d(normal_sum.x(), normal_sum.y(), w_pi.x()*w_nj.y() - w_pi.y()*w_nj.x() + w_pj.x()*w_ni.y() - w_pj.y()*w_ni.x());
-        
-        // // compute the jacobian of the transformation
-        // Ji = Matrix1_3d(beta.x(), beta.y(), pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x());
-        // Jj = Matrix1_3d(-beta.x(), -beta.y(), -(pi_w.x()*nj_w.y()-pi_w.y()*nj_w.x() + pj_w.x()*ni_w.y()-pj_w.y()*ni_w.x()));
-        
-        // error = (points_diff).dot(normal_sum);
-
         return true;
     }
 
       void linearize(const vector<TriplePairVector>& correspondences, vector<Eigen::Triplet<double>> &coefficients, bool keep_outliers){
         
-        _num_inliers=0;
-        _chi_inliers=0;
-        _num_outliers=0;
-        _chi_outliers=0;
+
+        // _total_num_inliers = 0;
+        // _total_num_outliers = 0;
+        // _total_chi_inliers = 0;
+        // _total_chi_inliers = 0;
+
+        _total_num_inliers=0;
+        _total_chi_inliers=0;
+        _total_num_outliers=0;
+        _total_chi_outliers=0;
+
+        _max_chi_inliers = 0;
+        _max_chi_outliers = 0;
+        _max_num_inliers = 0;
+        _max_num_outliers = 0;
+
 
         _b.setZero();
 
         for (size_t block_index = 0; block_index < correspondences.size(); block_index++)
         {
 
+          int num_inliers = 0;
+          int num_outliers = 0;
+          double chi_inliers = 0;
+          double chi_outliers = 0;
           TriplePairVector pose_pose_correspondences = correspondences[block_index];
           
           Eigen::Matrix3d H;
@@ -146,11 +147,11 @@ class NICP2dSolver{
             if (chi > _kernel_thereshold){
               lambda=sqrt(_kernel_thereshold/chi);
               is_inlier=false;
-              _chi_outliers+=chi;
-              _num_outliers++;
+              chi_outliers+=chi;
+              num_outliers++;
             } else {
-              _chi_inliers+=chi;
-              _num_inliers++;
+              chi_inliers+=chi;
+              num_inliers++;
             }
 
             
@@ -164,7 +165,23 @@ class NICP2dSolver{
 
             }
           }
-                       
+
+
+          // update global statistics  
+          if(chi_inliers > _max_chi_inliers){
+            _max_chi_inliers = chi_inliers;
+            _max_num_inliers = num_inliers;
+          }
+          if(chi_outliers > _max_chi_outliers) {
+            _max_chi_outliers = chi_outliers;
+            _max_num_outliers = num_outliers;
+          }
+          
+          _total_chi_inliers += chi_inliers;
+          _total_chi_outliers += chi_outliers;
+          _total_num_inliers += num_inliers;
+          _total_num_outliers += num_outliers;
+
           for (size_t i = 0; i < 3; i++)
           {
             for (size_t j = 0; j < 3; j++)
@@ -196,8 +213,8 @@ class NICP2dSolver{
         _normals=0;
         
         _min_num_inliers=0;
-        _num_inliers=0;
-        _num_outliers=0;
+        _total_num_inliers=0;
+        _total_num_outliers=0;
         
         _damping=1;
         _kernel_thereshold=1;
@@ -227,16 +244,28 @@ class NICP2dSolver{
       Eigen::VectorXd* state() {return _state;}
 
       //! chi square of the "good" points
-      const double chiInliers() const {return _chi_inliers;}
+      const double chiTotInliers() const {return _total_chi_inliers;}
       
       //! chi square of the "bad" points
-      const double chiOutliers() const {return _chi_outliers;}
+      const double chiTotOutliers() const {return _total_chi_outliers;}
       
       //! number of inliers (an inlier is a point whose error is below kernel threshold)
-      const int numInliers() const {return _num_inliers;}
+      const int numTotInliers() const {return _total_num_inliers;}
       
       //! number of inliers (an inlier is a point whose error is below kernel threshold)
-      const int numOutliers() const {return _num_outliers;}
+      const int numTotOutliers() const {return _total_num_outliers;}
+      
+      //! chi square of the "good" points
+      const double chiMaxInliers() const {return _max_chi_inliers;}
+      
+      //! chi square of the "bad" points
+      const double chiMaxOutliers() const {return _max_chi_outliers;}
+      
+      //! number of inliers (an inlier is a point whose error is below kernel threshold)
+      const int numMaxInliers() const {return _max_num_inliers;}
+      
+      //! number of inliers (an inlier is a point whose error is below kernel threshold)
+      const int numMaxOutliers() const {return _max_num_outliers;}
       
       bool oneRound(const vector<TriplePairVector>& correspondences, bool keep_outliers){
 
@@ -244,7 +273,7 @@ class NICP2dSolver{
 
         linearize(correspondences, coefficients, keep_outliers);
 
-        if(_num_inliers <_min_num_inliers) {
+        if(_total_num_inliers <_min_num_inliers) {
           cerr << "too few inliers, skipping" << endl;
           return false;
         }
@@ -267,7 +296,7 @@ class NICP2dSolver{
 
         return true;
       }
-
+      
 };
 
 

@@ -11,6 +11,16 @@
 #include <iomanip>      // std::setprecision
 
 
+#include <iostream>
+#include <iomanip>
+#include <ctime>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <charconv>
 
 #include <Eigen/Eigenvalues> 

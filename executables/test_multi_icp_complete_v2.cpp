@@ -51,6 +51,16 @@ int main (int argc, char** argv) {
     print_configuration(dataset_filename, dataset_from_record_number, dataset_num_records,
       points_kdtree_dim, poses_kdtree_dim, min_poses_correspondences, min_local_correspondences,
       iterations, kernel_threshold, damping, keep_outliers);
+
+    string file_label;
+    string file_dir = "results/";
+
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S") << "_conf_it_" << iterations << "_kt_" << kernel_threshold << "_dm_" << damping << "_";
+    file_label = oss.str();
+
     
     Dataset dataset(dataset_filename);
 
@@ -82,10 +92,10 @@ int main (int argc, char** argv) {
 
     cout << "Writing on file.." << endl;
     
-    ofstream points_file, poses_file;
-    points_file.open ("points.dat");
-    poses_file.open ("poses.dat");
-
+    ofstream points_file, poses_file, points_opt_file, poses_opt_file, poses_correspondences_file, points_correspondences_file, statistics_file;
+    points_file.open (file_dir + file_label + "points.dat");
+    poses_file.open (file_dir + file_label + "poses.dat");
+    
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
         for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -210,6 +220,10 @@ int main (int argc, char** argv) {
     Eigen::VectorXd state;
     solver.init(state, poses, points, normals, kernel_threshold, damping);
     
+    statistics_file.open (file_dir + file_label + "statistics.dat");
+    
+    statistics_file << "iteration, max_inliers, max_chi_inliers, max_outliers, max_chi_outliers, tot_inliers, tot_chi_inliers, tot_outliers, tot_chi_outliers" << endl;
+
     cout << "Init Multi ICP Solver ok." << endl;
 
     vector<TriplePairVector> correspondences;
@@ -217,11 +231,12 @@ int main (int argc, char** argv) {
     Eigen::MatrixXi fill_in(num_poses, num_poses);
 
     cout << setw(15) << fixed  << setprecision(2) << "iteration";
-    cout << setw(15) << fixed  << setprecision(2) << "inliers";
-    cout << setw(15) << fixed  << setprecision(2) << "error";
-    cout << setw(15) << fixed  << setprecision(2) << "outliers";
-    cout << setw(15) << fixed  << setprecision(2) << "error";
+    cout << setw(15) << fixed  << setprecision(2) << "inliers [max/tot]";
+    cout << setw(15) << fixed  << setprecision(2) << "error [max/tot]";
+    cout << setw(15) << fixed  << setprecision(2) << "outliers [max/tot]";
+    cout << setw(15) << fixed  << setprecision(2) << "error [max/tot]";
     cout << endl;
+    
     for (size_t iteration = 0; iteration < iterations; iteration++)
     {
       correspondences.clear();
@@ -303,12 +318,24 @@ int main (int argc, char** argv) {
 
       solver.oneRound(correspondences, keep_outliers);
       
+      // log on shell
       cout << setw(15) << fixed  << setprecision(2) << iteration;
-      cout << setw(15) << fixed  << setprecision(2) << solver.numInliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.chiInliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.numOutliers();
-      cout << setw(15) << fixed  << setprecision(2) << solver.chiOutliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numMaxInliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiMaxInliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numMaxOutliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiMaxOutliers();
       cout << endl;
+      
+      cout << setw(15) << fixed  << setprecision(2) << "";
+      cout << setw(20) << fixed  << setprecision(2) << solver.numTotInliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiTotInliers();
+      cout << setw(20) << fixed  << setprecision(2) << solver.numTotOutliers();
+      cout << setw(20) << fixed  << setprecision(4) << solver.chiTotOutliers();
+      cout << endl;
+
+      statistics_file << iteration << ", " << solver.numMaxInliers() << ", " << solver.chiMaxInliers() << ", " << solver.numMaxOutliers() << ", " << solver.chiMaxOutliers()
+      << ", " << solver.numTotInliers() << ", " << solver.chiTotInliers() << ", " << solver.numTotOutliers() << ", " << solver.chiTotOutliers() << endl;
+      
       
       // update poses
       for (size_t pose_index = 0; pose_index < num_poses; pose_index++)
@@ -334,9 +361,9 @@ int main (int argc, char** argv) {
 
     cout << "Writing on file.." << endl;
   
-    points_file.open ("points_opt.dat");
-    poses_file.open ("poses_opt.dat");
-
+    points_opt_file.open (file_dir + file_label + "points_opt.dat");
+    poses_opt_file.open (file_dir + file_label + "poses_opt.dat");
+    
     for (size_t pose_index = 0; pose_index < map.size(); pose_index++)
     {
         for (size_t point_index = 0; point_index < map[pose_index].size(); point_index++)
@@ -351,15 +378,15 @@ int main (int argc, char** argv) {
             PointType world_point = v2t(pose) * point;
             PointType world_pose = pose.block(0, 0, 2, 1);
             
-            points_file << world_point.transpose() << endl;
-            poses_file << world_pose.transpose() << endl;
+            points_opt_file << world_point.transpose() << endl;
+            poses_opt_file << world_pose.transpose() << endl;
 
         }    
     }
 
     
-    points_file.close();
-    poses_file.close();
+    points_opt_file.close();
+    points_opt_file.close();
 
     cout << "Writing on file complete." << endl;
     

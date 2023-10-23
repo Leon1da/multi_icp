@@ -1,5 +1,6 @@
 # include "defs.h"
 
+
 bool read_configuration(
     int argc, char** argv,
     string &dataset_filename,
@@ -104,3 +105,40 @@ void print_configuration(
     
 
 }
+
+string conf_to_string(
+    string& label,
+    string& dataset_filename,
+    int& dataset_from_record_number,
+    int& dataset_num_records,
+    int& points_kdtree_dim,
+    int& poses_kdtree_dim,
+    int& min_poses_correspondences,
+    int& min_local_correspondences,
+    int& iterations,
+    double& kernel_threshold,
+    double& damping,
+    bool& keep_outliers
+){
+          
+    cout << "ok" << endl;
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    
+    cout << "ok 1" << endl;
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S") << "_conf_it_" << iterations << "_kt_" << kernel_threshold << "_dm_" << damping;
+    
+    cout << "ok 2" << endl;
+    label = oss.str();
+
+    cout << label << endl; 
+    cout << "ok 3" << endl;
+
+
+    
+
+}
+
+    
